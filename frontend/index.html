@@ -282,6 +282,7 @@
   .status-select.badge-conc-preco  { background: #fff7ed; color: #9a3412; }
   .status-select.badge-conc-prazo  { background: #fef3c7; color: #92400e; }
   .status-select.badge-conc-nd     { background: #f5f3ff; color: #4c1d95; }
+  .status-select.badge-conc-outros { background: #fff7ed; color: #9a3412; }
 
   .followup-alert {
     margin-top: 5px;
@@ -514,21 +515,21 @@
       </optgroup>
 
       <optgroup label="Encerrados">
-        <option value="reprovado">Reprovado</option>
-        <option value="cancelado">Cancelado</option>
-        <option value="sem_verba">Sem Verba</option>
-        <option value="sem_retorno">Sem Retorno</option>
-        <option value="timing_ruim">Timing Ruim</option>
-        <option value="negociacao_nao_evoluiu">Negociação não evoluiu</option>
-        <option value="ficha_reprovada">Ficha Reprovada</option>
+        <option value="reprovado">❌ Reprovado</option>
+        <option value="cancelado">🚫 Cancelado</option>
+        <option value="sem_verba">💰 Sem Verba</option>
+        <option value="sem_retorno">💤 Sem Retorno</option>
+        <option value="timing_ruim">📆 Timing Ruim</option>
+        <option value="negociacao_nao_evoluiu">🤝 Negociação não evoluiu</option>
+        <option value="ficha_reprovada">🛑 Ficha Reprovada</option>
         <option value="perdido">📉 Perdido</option>
       </optgroup>
 
       <optgroup label="Perdido para concorrente">
-        <option value="concorrente_preco">Concorrente — Preço</option>
-        <option value="concorrente_prazo">Concorrente — Prazo</option>
-        <option value="concorrente_motivo_nao_declarado">Concorrente — Motivo não declarado</option>
-        <option value="concorrente_outros">Concorrente — Outros</option>
+        <option value="concorrente_preco">🏷️ Concorrente — Preço</option>
+        <option value="concorrente_prazo">⏰ Concorrente — Prazo</option>
+        <option value="concorrente_motivo_nao_declarado">🤔 Concorrente — Motivo não declarado</option>
+        <option value="concorrente_outros">🧐 Concorrente — Outros</option>
       </optgroup>
     </select>
   </div>
@@ -596,7 +597,22 @@ Object.assign(STATUS_MAP, {
   em_negociacao:        { cls: 'badge-negociacao', label: '🔄 Em Negociação',        desc: 'Em negociação ativa' },
   aguardando_aprovacao: { cls: 'badge-aprovacao',  label: '📝 Aguardando Aprovação', desc: 'Aguardando aprovação do cliente' },
   ganho:                { cls: 'badge-ganho',      label: '✅ Ganho',                desc: 'Venda fechada' },
-  perdido:              { cls: 'badge-perdido',    label: '📉 Perdido',              desc: 'Venda perdida' }
+  reprovado:            { cls: 'badge-reprovado',  label: '❌ Reprovado',            desc: 'Cliente não aprovou ou desistiu sem concorrente' },
+  cancelado:            { cls: 'badge-cancelado',  label: '🚫 Cancelado',            desc: 'Cancelamento após início da negociação' },
+  sem_verba:            { cls: 'badge-sem-verba',  label: '💰 Sem Verba',            desc: 'Cliente sem recursos financeiros suficientes' },
+  sem_retorno:          { cls: 'badge-sem-retorno', label: '💤 Sem Retorno',         desc: 'Cliente não respondeu mais' },
+  timing_ruim:          { cls: 'badge-timing',     label: '📆 Timing Ruim',          desc: 'Projeto adiado indefinidamente' },
+  negociacao_nao_evoluiu: { cls: 'badge-nao-evol', label: '🤝 Negociação não evoluiu', desc: 'Não chegaram a um acordo' },
+  ficha_reprovada:      { cls: 'badge-ficha',      label: '🛑 Ficha Reprovada',      desc: 'Ficha não aprovada / negação de crédito' },
+  perdido:              { cls: 'badge-perdido',    label: '📉 Perdido',              desc: 'Venda perdida' },
+  concorrente_preco:    { cls: 'badge-conc-preco', label: '🏷️ Concorrente — Preço',  desc: 'Perdeu por preço para concorrente' },
+  concorrente_prazo:    { cls: 'badge-conc-prazo', label: '⏰ Concorrente — Prazo',  desc: 'Perdeu por prazo para concorrente' },
+  concorrente_motivo_nao_declarado: {
+    cls: 'badge-conc-nd',
+    label: '🤔 Concorrente — Motivo N.D.',
+    desc: 'Perdeu para concorrente sem motivo declarado'
+  },
+  concorrente_outros:   { cls: 'badge-conc-outros', label: '🧐 Concorrente — Outros', desc: 'Cliente já possui equipamentos' }
 });
 
 const STATUS_GROUPS = [
