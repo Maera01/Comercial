@@ -117,9 +117,15 @@ async function iniciarBanco() {
   await query(`
     CREATE TABLE IF NOT EXISTS ${VENDEDORES_TABLE} (
       nome TEXT PRIMARY KEY,
+      login TEXT,
+      senha TEXT,
+      master BOOLEAN NOT NULL DEFAULT FALSE,
+      perfil TEXT NOT NULL DEFAULT 'vendedor',
       criado_em TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )
   `);
+
+  await prepararTabelaVendedores();
 
   await query(`
     CREATE TABLE IF NOT EXISTS ${ORCAMENTOS_TABLE} (
@@ -138,6 +144,7 @@ async function iniciarBanco() {
 
   await migrarTabelasPublic();
   await importarJsonInicial();
+  await normalizarVendedoresSql();
   console.log(`Banco PostgreSQL conectado no schema "${DB_SCHEMA}".`);
 }
 
@@ -159,6 +166,57 @@ async function colunaExiste(schema, tabela, coluna) {
     [schema, tabela, coluna]
   );
   return resultado.rowCount > 0;
+}
+
+async function prepararTabelaVendedores() {
+  await query(`ALTER TABLE ${VENDEDORES_TABLE} ADD COLUMN IF NOT EXISTS login TEXT`);
+  await query(`ALTER TABLE ${VENDEDORES_TABLE} ADD COLUMN IF NOT EXISTS senha TEXT`);
+  await query(`ALTER TABLE ${VENDEDORES_TABLE} ADD COLUMN IF NOT EXISTS master BOOLEAN NOT NULL DEFAULT FALSE`);
+  await query(`ALTER TABLE ${VENDEDORES_TABLE} ADD COLUMN IF NOT EXISTS perfil TEXT NOT NULL DEFAULT 'vendedor'`);
+  await query(`
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_vendedores_login
+    ON ${VENDEDORES_TABLE} (login)
+    WHERE login IS NOT NULL
+  `);
+}
+
+function parseVendedorPersistido(valor) {
+  if (typeof valor !== 'string') return valor;
+  const texto = valor.trim();
+  if (!texto.startsWith('{')) return texto;
+  try {
+    const parsed = JSON.parse(texto);
+    return parsed && typeof parsed === 'object' ? parsed : valor;
+  } catch {
+    return valor;
+  }
+}
+
+async function normalizarVendedoresSql() {
+  const resultado = await query(`
+    SELECT nome, login, senha, master, perfil, criado_em
+    FROM ${VENDEDORES_TABLE}
+    ORDER BY criado_em ASC, nome ASC
+  `);
+  const base = resultado.rows.map((row, index) => {
+    const nomeParseado = parseVendedorPersistido(row.nome);
+    const dados = typeof nomeParseado === 'object'
+      ? { ...nomeParseado, criadoEm: row.criado_em }
+      : {
+          nome: row.nome,
+          login: row.login,
+          senha: row.senha,
+          master: row.master,
+          perfil: row.perfil,
+          criadoEm: row.criado_em
+        };
+    return normalizarUsuario(dados, index);
+  });
+  const normalizados = normalizarListaVendedores(base);
+  await query(`DELETE FROM ${VENDEDORES_TABLE}`);
+  for (const usuario of normalizados) {
+    await salvarVendedorSql(usuario);
+  }
 }
 
 async function migrarTabelasPublic() {
@@ -190,11 +248,8 @@ async function importarJsonInicial() {
   const vendedoresCount = await query(`SELECT COUNT(*)::int AS total FROM ${VENDEDORES_TABLE}`);
   if (vendedoresCount.rows[0].total === 0) {
     const vendedores = normalizarListaVendedores(readJson(VENDEDORES_PATH, []));
-    for (const nome of vendedores) {
-      await query(
-        `INSERT INTO ${VENDEDORES_TABLE} (nome) VALUES ($1) ON CONFLICT (nome) DO NOTHING`,
-        [nome]
-      );
+    for (const usuario of vendedores) {
+      await salvarVendedorSql(usuario);
     }
   }
 
@@ -209,14 +264,46 @@ async function importarJsonInicial() {
 }
 
 async function listarVendedores() {
-  const vendedoresArquivo = normalizarListaVendedores(readJson(VENDEDORES_PATH, []));
-  if (!pool || vendedoresArquivo.length) return vendedoresArquivo;
-  const resultado = await query(`SELECT nome FROM ${VENDEDORES_TABLE} ORDER BY nome ASC`);
-  return normalizarListaVendedores(resultado.rows.map(row => row.nome));
+  if (!pool) return normalizarListaVendedores(readJson(VENDEDORES_PATH, []));
+  const resultado = await query(`
+    SELECT nome, login, senha, master, perfil
+    FROM ${VENDEDORES_TABLE}
+    ORDER BY master DESC, nome ASC
+  `);
+  return normalizarListaVendedores(resultado.rows);
 }
 
 async function salvarListaVendedores(lista) {
-  writeJson(VENDEDORES_PATH, normalizarListaVendedores(lista));
+  const normalizados = normalizarListaVendedores(lista);
+  writeJson(VENDEDORES_PATH, normalizados);
+  if (!pool) return;
+
+  await query(`DELETE FROM ${VENDEDORES_TABLE}`);
+  for (const usuario of normalizados) {
+    await salvarVendedorSql(usuario);
+  }
+}
+
+async function salvarVendedorSql(usuario) {
+  await query(
+    `
+      INSERT INTO ${VENDEDORES_TABLE} (nome, login, senha, master, perfil)
+      VALUES ($1, $2, $3, $4, $5)
+      ON CONFLICT (nome)
+      DO UPDATE SET
+        login = EXCLUDED.login,
+        senha = EXCLUDED.senha,
+        master = EXCLUDED.master,
+        perfil = EXCLUDED.perfil
+    `,
+    [
+      usuario.nome,
+      usuario.login,
+      usuario.senha,
+      !!usuario.master,
+      usuario.perfil || (usuario.master ? 'admin' : 'vendedor')
+    ]
+  );
 }
 
 async function criarVendedor(dados) {
@@ -226,12 +313,6 @@ async function criarVendedor(dados) {
   if (indice >= 0) vendedores[indice] = { ...vendedores[indice], ...usuario };
   else vendedores.push(usuario);
   await salvarListaVendedores(vendedores);
-  if (!pool) return sanitizarUsuario(usuario);
-
-  await query(
-    `INSERT INTO ${VENDEDORES_TABLE} (nome) VALUES ($1) ON CONFLICT (nome) DO NOTHING`,
-    [usuario.nome]
-  );
   return sanitizarUsuario(usuario);
 }
 
@@ -271,7 +352,7 @@ async function excluirVendedor(login) {
 
   const usuario = (await listarVendedores()).find(item => item.login === login);
   if (!usuario || usuario.master) return false;
-  const resultado = await query(`DELETE FROM ${VENDEDORES_TABLE} WHERE nome = $1`, [usuario.nome]);
+  const resultado = await query(`DELETE FROM ${VENDEDORES_TABLE} WHERE login = $1`, [login]);
   return resultado.rowCount > 0;
 }
 
@@ -657,18 +738,23 @@ app.get('/teste', (req, res) => {
   res.send('<h1>Rota teste OK</h1>');
 });
 
-app.post('/api/login', (req, res) => {
+app.post('/api/login', async (req, res) => {
   const login = slugLogin(req.body?.login || MASTER_LOGIN);
   const senha = String(req.body?.senha || '');
-  const usuarios = normalizarListaVendedores(readJson(VENDEDORES_PATH, []));
-  const usuario = usuarios.find(item => item.login === login && item.senha === senha);
-  if (!usuario) {
-    return res.status(401).json({ erro: 'Senha invalida.' });
-  }
+  try {
+    const usuarios = normalizarListaVendedores(await listarVendedores());
+    const usuario = usuarios.find(item => item.login === login && item.senha === senha);
+    if (!usuario) {
+      return res.status(401).json({ erro: 'Senha invalida.' });
+    }
 
-  const token = criarToken(usuario);
-  res.setHeader('Set-Cookie', cookieAuth(token, req));
-  res.json({ ok: true, token, usuario: sanitizarUsuario(usuario) });
+    const token = criarToken(usuario);
+    res.setHeader('Set-Cookie', cookieAuth(token, req));
+    res.json({ ok: true, token, usuario: sanitizarUsuario(usuario) });
+  } catch (e) {
+    console.error('Erro ao fazer login:', e);
+    res.status(500).json({ erro: 'Erro ao fazer login.' });
+  }
 });
 
 app.post('/api/logout', (req, res) => {
