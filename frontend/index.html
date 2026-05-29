@@ -1,0 +1,1173 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<title>MAERA – Orçamentos</title>
+<link rel="stylesheet" href="assets/style.css" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+
+<style>
+  /* ══════════════════════════════════════
+     CARDS MOBILE — lista de orçamentos
+  ══════════════════════════════════════ */
+  .lista-mobile { display: none; }
+
+  @media (max-width: 768px) {
+    .card-tabela  { display: none !important; }
+    .lista-mobile { display: flex; flex-direction: column; gap: 10px; }
+
+    .orc-card {
+      background: #fff; border-radius: 12px;
+      box-shadow: 0 1px 6px rgba(0,0,0,.08);
+      padding: 14px 16px; border: 1px solid #e5e7eb;
+      display: flex; flex-direction: column;
+      gap: 10px; transition: box-shadow .15s;
+    }
+    .orc-card:active { box-shadow: 0 2px 10px rgba(0,0,0,.13); }
+
+    .orc-card-top { display: flex; justify-content: space-between; align-items: center; }
+    .orc-numero {
+      font-size: 13px; font-weight: 700;
+      color: #f24105; letter-spacing: .3px;
+    }
+    .orc-cliente {
+      font-size: 15px; font-weight: 600; color: #111827;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .orc-info-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 6px 12px;
+    }
+    .orc-info-item  { display: flex; flex-direction: column; gap: 1px; }
+    .orc-info-label {
+      font-size: 10px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: .5px;
+      color: #9ca3af;
+    }
+    .orc-info-value { font-size: 13px; color: #374151; font-weight: 500; }
+
+    .orc-card-actions {
+      display: flex; gap: 8px;
+      padding-top: 4px; border-top: 1px solid #f3f4f6;
+      flex-wrap: wrap;
+    }
+    .orc-btn {
+      flex: 1; display: flex; align-items: center; justify-content: center;
+      gap: 6px; padding: 9px 12px; border-radius: 8px;
+      font-size: 13px; font-weight: 600;
+      text-decoration: none; border: none; cursor: pointer;
+      transition: background .15s, transform .1s;
+    }
+    .orc-btn:active { transform: scale(.97); }
+
+    .orc-btn-ver          { background: #eff6ff; color: #1d4ed8; }
+    .orc-btn-ver:hover    { background: #dbeafe; }
+    .orc-btn-editar       { background: #fff7ed; color: #f24105; }
+    .orc-btn-editar:hover { background: #ffedd5; }
+    .orc-btn-clonar       { background: #f0fdf4; color: #065f46; flex: 0 0 auto; padding: 9px 14px; }
+    .orc-btn-clonar:hover { background: #dcfce7; }
+    .orc-btn-excluir      { background: #fef2f2; color: #f24105; flex: 0 0 auto; padding: 9px 14px; }
+    .orc-btn-excluir:hover { background: #fee2e2; }
+
+    .sem-dados-mobile {
+      display: flex; flex-direction: column; align-items: center;
+      gap: 12px; padding: 40px 20px; text-align: center; color: #6b7280;
+    }
+    .sem-dados-mobile i { font-size: 36px; color: #d1d5db; }
+
+    .top-bar .btn-primary-mobile { width: 100%; justify-content: center; padding: 11px; font-size: 14px; }
+    .kpi-panel { grid-template-columns: 1fr; }
+    .kpi-card-wide { grid-column: span 1; }
+    .filter-bar { flex-direction: column !important; gap: 8px !important; }
+    .filter-bar input, .filter-bar select { width: 100% !important; min-width: unset !important; }
+    .page-title { font-size: 17px !important; }
+  }
+
+  .btn-icon-clonar {
+    background: none; border: none; cursor: pointer; padding: 6px 8px;
+    border-radius: 6px; color: #0e9f6e; font-size: 14px;
+    transition: background .15s; text-decoration: none;
+  }
+  .btn-icon-clonar:hover { background: rgba(14,159,110,.10); }
+
+  /* ══════════════════════════════════════
+     KPIs — painel comercial
+  ══════════════════════════════════════ */
+  .kpi-panel {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .kpi-card {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 14px 16px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.06);
+    min-height: 92px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .kpi-card-wide { grid-column: span 2; }
+  .kpi-label {
+    font-size: 10.5px;
+    font-weight: 800;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .kpi-value {
+    font-size: 22px;
+    font-weight: 900;
+    color: #111827;
+    line-height: 1.15;
+  }
+  .kpi-sub {
+    font-size: 11.5px;
+    color: #6b7280;
+    line-height: 1.4;
+  }
+  .kpi-list {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    margin-top: 2px;
+  }
+  .kpi-list-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    font-size: 12px;
+    color: #374151;
+  }
+  .kpi-list-row strong {
+    color: #111827;
+    white-space: nowrap;
+  }
+  .kpi-empty {
+    font-size: 12px;
+    color: #9ca3af;
+    padding-top: 4px;
+  }
+
+  @media (max-width: 1024px) {
+    .kpi-panel { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+
+  /* ══════════════════════════════════════
+     STATUS — badge + wrapper + tooltip
+  ══════════════════════════════════════ */
+  .status-wrap {
+    position: relative;
+    display: inline-block;
+  }
+
+  .status-select {
+    padding: 4px 10px; border-radius: 20px; font-size: 11.5px;
+    font-weight: 700; text-transform: uppercase; letter-spacing: .4px;
+    border: none; appearance: none; cursor: pointer;
+    outline: none; text-align: center;
+  }
+
+  /* Tooltip */
+  .status-tip {
+    display: none;
+    position: absolute;
+    bottom: calc(100% + 7px);
+    left: 50%; transform: translateX(-50%);
+    background: #1f2937;
+    color: #f9fafb;
+    font-size: 11.5px;
+    font-weight: 400;
+    line-height: 1.4;
+    padding: 6px 10px;
+    border-radius: 7px;
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 100;
+  }
+  .status-tip::after {
+    content: '';
+    position: absolute;
+    top: 100%; left: 50%; transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-top-color: #1f2937;
+  }
+  .status-wrap:hover .status-tip { display: block; }
+
+  /* Cores dos badges */
+  .status-select.badge-novo        { background: #dbeafe; color: #1e40af; }
+  .status-select.badge-contato     { background: #ede9fe; color: #4c1d95; }
+  .status-select.badge-proposta    { background: #fef3c7; color: #78350f; }
+  .status-select.badge-followup    { background: #e0f2fe; color: #075985; }
+  .status-select.badge-negociacao  { background: #ffedd5; color: #7c2d12; }
+  .status-select.badge-aprovacao   { background: #ede9fe; color: #4c1d95; }
+  .status-select.badge-ganho       { background: #d1fae5; color: #065f46; }
+  .status-select.badge-perdido     { background: #fee2e2; color: #991b1b; }
+  .status-select.badge-reprovado   { background: #fee2e2; color: #991b1b; }
+  .status-select.badge-cancelado   { background: #f3f4f6; color: #374151; }
+  .status-select.badge-sem-verba   { background: #fef9c3; color: #713f12; }
+  .status-select.badge-sem-retorno { background: #e0e7ff; color: #3730a3; }
+  .status-select.badge-timing      { background: #fce7f3; color: #831843; }
+  .status-select.badge-nao-evol    { background: #ecfdf5; color: #065f46; }
+  .status-select.badge-ficha       { background: #fef2f2; color: #7f1d1d; }
+  .status-select.badge-conc-preco  { background: #fff7ed; color: #9a3412; }
+  .status-select.badge-conc-prazo  { background: #fef3c7; color: #92400e; }
+  .status-select.badge-conc-nd     { background: #f5f3ff; color: #4c1d95; }
+
+  .followup-alert {
+    margin-top: 5px;
+    font-size: 11px;
+    font-weight: 800;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    border-radius: 999px;
+    padding: 3px 8px;
+    white-space: nowrap;
+  }
+  .followup-alert.ok {
+    background: #ecfeff;
+    color: #0e7490;
+  }
+  .followup-alert.today {
+    background: #fef3c7;
+    color: #92400e;
+  }
+  .followup-alert.late {
+    background: #fee2e2;
+    color: #991b1b;
+  }
+
+  /* ══════════════════════════════════════
+     KPI — produtos: botão "ver todos"
+  ══════════════════════════════════════ */
+  .kpi-ver-todos {
+    background: none; border: none; cursor: pointer;
+    font-size: 11px; font-weight: 600; color: #6b7280;
+    text-transform: uppercase; letter-spacing: .4px;
+    padding: 4px 0; margin-top: 4px;
+    display: flex; align-items: center; gap: 5px;
+    transition: color .15s;
+  }
+  .kpi-ver-todos:hover { color: #374151; }
+  .kpi-ver-todos .chevron {
+    transition: transform .22s ease;
+    display: inline-block;
+    font-size: 10px;
+  }
+  .kpi-ver-todos.aberto .chevron { transform: rotate(180deg); }
+
+  .kpi-produtos-top4 {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+  }
+
+  .kpi-produtos-extra {
+    display: none;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 6px;
+    padding-top: 8px;
+    border-top: 1px solid #f3f4f6;
+    max-height: 240px;
+    overflow-y: auto;
+  }
+  .kpi-produtos-extra.aberto { display: flex; }
+
+  /* scrollbar fina no dropdown */
+  .kpi-produtos-extra::-webkit-scrollbar { width: 4px; }
+  .kpi-produtos-extra::-webkit-scrollbar-track { background: transparent; }
+  .kpi-produtos-extra::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 99px; }
+
+  .kpi-prod-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: #374151;
+  }
+  .kpi-prod-rank {
+    font-size: 10px; font-weight: 700; color: #d1d5db;
+    min-width: 16px; text-align: right; flex-shrink: 0;
+  }
+  .kpi-prod-rank.top { color: #f24105; }
+  .kpi-prod-nome {
+    flex: 1; min-width: 0;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .kpi-prod-bar-wrap {
+    width: 44px; height: 3px; background: #f3f4f6;
+    border-radius: 99px; overflow: hidden; flex-shrink: 0;
+  }
+  .kpi-prod-bar { height: 100%; background: #f24105; border-radius: 99px; }
+  .kpi-prod-qtd {
+    font-size: 11px; font-weight: 700; color: #111827;
+    white-space: nowrap; flex-shrink: 0; min-width: 36px; text-align: right;
+  }
+  .kpi-prod-valor {
+    font-size: 10.5px; color: #6b7280;
+    white-space: nowrap; flex-shrink: 0; min-width: 72px; text-align: right;
+  }
+</style>
+</head>
+<body>
+<div class="layout">
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <img src="assets/logo.png" alt="MAERA"
+      style="height:38px;width:auto;max-width:160px;object-fit:contain"
+      onerror="this.style.display='none'; document.getElementById('fbIndex').style.display='flex'"/>
+    <div id="fbIndex" style="display:none;align-items:center;gap:10px">
+      <span class="logo-icon"><i class="fa-solid fa-file-invoice-dollar"></i></span>
+      <span class="logo-text">MAERA</span>
+    </div>
+  </div>
+  <nav class="sidebar-nav">
+    <a href="index.html" class="nav-item active">
+      <i class="fa-solid fa-house"></i> Orçamentos
+    </a>
+    <a href="novo.html" class="nav-item">
+      <i class="fa-solid fa-plus"></i> Novo Orçamento
+    </a>
+    <a href="vendedores.html" class="nav-item admin-only">
+      <i class="fa-solid fa-user"></i> Vendedores
+    </a>
+  </nav>
+</aside>
+
+<!-- MAIN -->
+<main class="main-content">
+  <header class="top-bar">
+    <h1 class="page-title">📋 Orçamentos</h1>
+    <div class="action-group">
+      <button type="button" class="btn btn-outline" id="btnIndicadores" onclick="toggleKPIsProtegido()">
+        <i class="fa-solid fa-chart-simple"></i> Indicadores
+      </button>
+      <button type="button" class="btn btn-secondary admin-only" onclick="exportarExcel()">
+        <i class="fa-solid fa-file-excel"></i> Excel
+      </button>
+      <button type="button" class="btn btn-outline admin-only" onclick="exportarDados()">
+        <i class="fa-solid fa-download"></i> Backup
+      </button>
+      <label for="inputBackup" class="btn btn-outline admin-only">
+        <i class="fa-solid fa-upload"></i> Restaurar
+      </label>
+      <input
+        type="file"
+        id="inputBackup"
+        accept="application/json,.json"
+        style="display:none"
+        onchange="importarDados(this.files[0]); this.value=''"
+      />
+      <a href="novo.html" class="btn btn-primary btn-primary-mobile">
+        <i class="fa-solid fa-plus"></i> Novo Orçamento
+      </a>
+    </div>
+  </header>
+
+  <!-- KPIs -->
+  <section class="kpi-panel" id="kpiPanel" aria-label="Indicadores comerciais" style="display:none">
+    <div class="kpi-card">
+      <div class="kpi-label"><i class="fa-solid fa-hourglass-half"></i> Em aberto</div>
+      <div class="kpi-value" id="kpiValorAberto">R$ 0,00</div>
+      <div class="kpi-sub" id="kpiQtdAberto">0 orçamento(s) ativos</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label"><i class="fa-solid fa-trophy"></i> Ganho no mês</div>
+      <div class="kpi-value" id="kpiGanhoMes">R$ 0,00</div>
+      <div class="kpi-sub" id="kpiQtdGanhoMes">0 orçamento(s) ganhos</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label"><i class="fa-solid fa-chart-line"></i> Conversão</div>
+      <div class="kpi-value" id="kpiConversao">0%</div>
+      <div class="kpi-sub" id="kpiBaseConversao">0 de 0 orçamento(s)</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label"><i class="fa-solid fa-receipt"></i> Ticket médio</div>
+      <div class="kpi-value" id="kpiTicketMedio">R$ 0,00</div>
+      <div class="kpi-sub">Média por orçamento</div>
+    </div>
+    <div class="kpi-card kpi-card-wide">
+      <div class="kpi-label"><i class="fa-solid fa-ranking-star"></i> Top vendedores</div>
+      <div class="kpi-list" id="kpiTopVendedores"></div>
+    </div>
+    <div class="kpi-card kpi-card-wide">
+      <div class="kpi-label"><i class="fa-solid fa-circle-exclamation"></i> Motivos de perda</div>
+      <div class="kpi-list" id="kpiMotivosPerda"></div>
+    </div>
+    <div class="kpi-card kpi-card-wide">
+      <div class="kpi-label"><i class="fa-solid fa-calendar-day"></i> Vencendo</div>
+      <div class="kpi-value" id="kpiVencendo">0</div>
+      <div class="kpi-sub" id="kpiVencendoSub">Próximos 7 dias</div>
+    </div>
+    <div class="kpi-card kpi-card-wide">
+      <div class="kpi-label"><i class="fa-solid fa-boxes-stacked"></i> Produtos que mais geraram valor</div>
+      <!-- Top 4 sempre visível -->
+      <div class="kpi-produtos-top4" id="kpiProdutosTop4"></div>
+      <!-- Restante — expande ao clicar -->
+      <div class="kpi-produtos-extra" id="kpiProdutosExtra"></div>
+      <!-- Botão "Ver todos / Ver menos" — só aparece quando há mais de 4 -->
+      <button
+        type="button"
+        class="kpi-ver-todos"
+        id="kpiBtnVerTodos"
+        style="display:none"
+        onclick="toggleProdutosExtra()"
+      >
+        <span id="kpiBtnVerTodosLabel">Ver todos</span>
+        <span class="chevron"><i class="fa-solid fa-chevron-down"></i></span>
+      </button>
+      <!-- Mantido para compatibilidade com renderListaKPI genérico (não usado aqui) -->
+      <div id="kpiProdutos" style="display:none"></div>
+    </div>
+  </section>
+
+  <!-- FILTROS -->
+  <div class="filter-bar">
+    <input type="text" id="searchInput"
+      placeholder="🔍 Buscar por cliente, número ou vendedor..."
+      class="input-search"/>
+    <select id="filterStatus" class="input-select">
+      <option value="">Todos os status</option>
+
+      <optgroup label="Ativos">
+        <option value="novo">🆕 Novo</option>
+        <option value="em_contato">📞 Em Contato</option>
+        <option value="proposta_enviada">📋 Proposta Enviada</option>
+        <option value="followup_7_dias">⏳ Follow-up 7 dias</option>
+        <option value="followup_15_dias">⏰ Follow-up 15 dias</option>
+        <option value="em_negociacao">🔄 Em Negociação</option>
+        <option value="aguardando_aprovacao">📝 Aguardando Aprovação</option>
+        <option value="ganho">✅ Ganho</option>
+      </optgroup>
+
+      <optgroup label="Encerrados">
+        <option value="reprovado">Reprovado</option>
+        <option value="cancelado">Cancelado</option>
+        <option value="sem_verba">Sem Verba</option>
+        <option value="sem_retorno">Sem Retorno</option>
+        <option value="timing_ruim">Timing Ruim</option>
+        <option value="negociacao_nao_evoluiu">Negociação não evoluiu</option>
+        <option value="ficha_reprovada">Ficha Reprovada</option>
+        <option value="perdido">📉 Perdido</option>
+      </optgroup>
+
+      <optgroup label="Perdido para concorrente">
+        <option value="concorrente_preco">Concorrente — Preço</option>
+        <option value="concorrente_prazo">Concorrente — Prazo</option>
+        <option value="concorrente_motivo_nao_declarado">Concorrente — Motivo não declarado</option>
+        <option value="concorrente_outros">Concorrente — Outros</option>
+      </optgroup>
+    </select>
+  </div>
+
+  <!-- TABELA DESKTOP -->
+  <div class="card card-tabela">
+    <table class="table" id="tabelaOrcamentos">
+      <thead>
+        <tr>
+          <th>Número</th>
+          <th>Razão Social</th>
+          <th>CNPJ / CPF</th>
+          <th>Vendedor</th>
+          <th>Emissão</th>
+          <th>Válido até</th>
+          <th>Status</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody id="tbodyOrcamentos"></tbody>
+    </table>
+    <div id="semDados" class="sem-dados" style="display:none">
+      <i class="fa-solid fa-folder-open"></i>
+      <p>Nenhum orçamento encontrado.</p>
+      <a href="novo.html" class="btn btn-primary">Criar primeiro orçamento</a>
+    </div>
+  </div>
+
+  <!-- CARDS MOBILE -->
+  <div class="lista-mobile" id="listaMobile"></div>
+
+</main>
+</div>
+<script src="assets/app.js?v=perfis-admin-vendedor-20260528"></script>
+<script>
+
+/* ═══════════════════════════════════════════════
+   Mapa completo de status — com descrição
+═══════════════════════════════════════════════ */
+const STATUS_MAP = {
+  novo:                             { cls: 'badge-novo',        label: '🆕 Novo',                       desc: 'Lead recém-cadastrado'                           },
+  em_contato:                       { cls: 'badge-contato',     label: '📞 Em Contato',                 desc: 'Primeiro contato realizado'                      },
+  proposta_enviada:                 { cls: 'badge-proposta',    label: '📋 Proposta Enviada',           desc: 'Proposta enviada, aguardando retorno'            },
+  em_negociacao:                    { cls: 'badge-negociacao',  label: '🔄 Em Negociação',              desc: 'Em negociação ativa'                             },
+  ganho:                            { cls: 'badge-ganho',       label: '✅ Ganho',                      desc: 'Venda fechada'                                   },
+  reprovado:                        { cls: 'badge-reprovado',   label: '❌ Reprovado',                  desc: 'Cliente não aprovou ou desistiu sem concorrente' },
+  cancelado:                        { cls: 'badge-cancelado',   label: '🚫 Cancelado',                  desc: 'Cancelamento após início da negociação'          },
+  sem_verba:                        { cls: 'badge-sem-verba',   label: '💰 Sem Verba',                  desc: 'Cliente sem recursos financeiros suficientes'    },
+  sem_retorno:                      { cls: 'badge-sem-retorno', label: '💤 Sem Retorno',                desc: 'Cliente não respondeu mais'                      },
+  timing_ruim:                      { cls: 'badge-timing',      label: '📆 Timing Ruim',                desc: 'Projeto adiado indefinidamente'                  },
+  negociacao_nao_evoluiu:           { cls: 'badge-nao-evol',    label: '🤝 Negociação não evoluiu',     desc: 'Não chegaram a um acordo'                        },
+  ficha_reprovada:                  { cls: 'badge-ficha',       label: '🛑 Ficha Reprovada',            desc: 'Ficha não aprovada / negação de crédito'         },
+  concorrente_preco:                { cls: 'badge-conc-preco',  label: '🏷️ Concorrente — Preço',        desc: 'Perdeu por preço para concorrente'               },
+  concorrente_prazo:                { cls: 'badge-conc-prazo',  label: '⏰ Concorrente — Prazo',        desc: 'Perdeu por prazo para concorrente'               },
+  concorrente_motivo_nao_declarado: { cls: 'badge-conc-nd',     label: '🤔 Concorrente — Motivo N.D.',  desc: 'Perdeu para concorrente sem motivo declarado'    },
+  concorrente_outros:               { cls: 'badge-conc-outros', label: '🧐 Concorrente — Outros',       desc: 'Cliente já possui equipamentos'                  },
+};
+
+Object.assign(STATUS_MAP, {
+  novo:                 { cls: 'badge-novo',       label: '🆕 Novo',                 desc: 'Orçamento recém-criado' },
+  em_contato:           { cls: 'badge-contato',    label: '📞 Em Contato',           desc: 'Contato em andamento' },
+  proposta_enviada:     { cls: 'badge-proposta',   label: '📋 Proposta Enviada',     desc: 'Proposta enviada, aguardando retorno' },
+  followup_7_dias:      { cls: 'badge-followup',   label: '⏳ Follow-up 7 dias',     desc: 'Retomar contato em 7 dias' },
+  followup_15_dias:     { cls: 'badge-followup',   label: '⏰ Follow-up 15 dias',    desc: 'Retomar contato em 15 dias' },
+  em_negociacao:        { cls: 'badge-negociacao', label: '🔄 Em Negociação',        desc: 'Em negociação ativa' },
+  aguardando_aprovacao: { cls: 'badge-aprovacao',  label: '📝 Aguardando Aprovação', desc: 'Aguardando aprovação do cliente' },
+  ganho:                { cls: 'badge-ganho',      label: '✅ Ganho',                desc: 'Venda fechada' },
+  perdido:              { cls: 'badge-perdido',    label: '📉 Perdido',              desc: 'Venda perdida' }
+});
+
+const STATUS_GROUPS = [
+  {
+    label: 'Ativos',
+    items: [
+      'novo',
+      'em_contato',
+      'proposta_enviada',
+      'followup_7_dias',
+      'followup_15_dias',
+      'em_negociacao',
+      'aguardando_aprovacao',
+      'ganho'
+    ]
+  },
+  {
+    label: 'Encerrados',
+    items: [
+      'reprovado',
+      'cancelado',
+      'sem_verba',
+      'sem_retorno',
+      'timing_ruim',
+      'negociacao_nao_evoluiu',
+      'ficha_reprovada',
+      'perdido'
+    ]
+  },
+  {
+    label: 'Perdido para concorrente',
+    items: [
+      'concorrente_preco',
+      'concorrente_prazo',
+      'concorrente_motivo_nao_declarado',
+      'concorrente_outros'
+    ]
+  }
+];
+
+/* Gera as <option> agrupadas com o status correto selecionado */
+function buildStatusOptions(statusAtual) {
+  return STATUS_GROUPS.map(g => {
+    const opts = g.items.map(v =>
+      `<option value="${v}"${v === statusAtual ? ' selected' : ''}>${STATUS_MAP[v].label}</option>`
+    ).join('');
+    return `<optgroup label="${g.label}">${opts}</optgroup>`;
+  }).join('');
+}
+
+/* Monta o wrapper com select + tooltip */
+function buildStatusCell(id, statusAtual, extraStyle = '') {
+  const st = STATUS_MAP[statusAtual] || STATUS_MAP.novo;
+  return `
+    <div class="status-wrap">
+      <select
+        class="status-select ${st.cls}"
+        ${extraStyle ? `style="${extraStyle}"` : ''}
+        onchange="atualizarStatus('${id}', this.value); atualizarBadgeSelect(this)"
+      >${buildStatusOptions(statusAtual)}</select>
+      <div class="status-tip">${st.desc}</div>
+    </div>`;
+}
+
+function prazoFollowUpDias(status) {
+  if (status === 'followup_7_dias') return 7;
+  if (status === 'followup_15_dias') return 15;
+  return 0;
+}
+
+function buildFollowUpAlert(orcamento) {
+  const prazo = prazoFollowUpDias(orcamento.status);
+  if (!prazo) return '';
+
+  const inicio = parseDataKPI(orcamento.atualizadoEm || orcamento.criadoEm || orcamento.emissao);
+  if (!inicio) return '';
+
+  inicio.setHours(0, 0, 0, 0);
+  const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
+  const vencimento = new Date(inicio);
+  vencimento.setDate(vencimento.getDate() + prazo);
+
+  const diffDias = Math.round((vencimento - hoje) / 86400000);
+  if (diffDias > 0) {
+    return `<div class="followup-alert ok">⏳ Faltam ${diffDias} dia(s)</div>`;
+  }
+  if (diffDias === 0) {
+    return '<div class="followup-alert today">🔔 Follow-up hoje</div>';
+  }
+  return `<div class="followup-alert late">⚠️ Vencido há ${Math.abs(diffDias)} dia(s)</div>`;
+}
+
+/* ═══════════════════════════════════════════════ */
+
+document.addEventListener('DOMContentLoaded', () => {
+  renderTabela();
+  document.getElementById('searchInput')
+    .addEventListener('input', debounce(renderTabela));
+  document.getElementById('filterStatus')
+    .addEventListener('change', renderTabela);
+});
+
+const KPI_SENHA = 'pipoca#2026';
+
+/* Variável em memória — zera a cada carregamento de página */
+let _kpisLiberados = false;
+
+function kpisLiberados() {
+  return _kpisLiberados;
+}
+
+function atualizarBotaoKPIs(visivel) {
+  const btn = document.getElementById('btnIndicadores');
+  if (!btn) return;
+  btn.innerHTML = visivel
+    ? '<i class="fa-solid fa-eye-slash"></i> Ocultar indicadores'
+    : '<i class="fa-solid fa-chart-simple"></i> Indicadores';
+}
+
+function setKPIsVisiveis(visivel) {
+  const painel = document.getElementById('kpiPanel');
+  if (!painel) return;
+  painel.style.display = visivel ? 'grid' : 'none';
+  atualizarBotaoKPIs(visivel);
+}
+
+function solicitarSenhaKPIs() {
+  return new Promise(resolve => {
+    const overlay = document.createElement('div');
+    overlay.style.cssText = `
+      position:fixed;inset:0;background:rgba(0,0,0,.45);
+      z-index:99998;display:flex;align-items:center;justify-content:center`;
+    overlay.innerHTML = `
+      <div style="background:#fff;border-radius:12px;padding:24px 28px;
+        max-width:360px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,.2)">
+        <h2 style="font-size:16px;font-weight:800;color:#111827;margin:0 0 8px">
+          Indicadores comerciais
+        </h2>
+        <p style="font-size:12.5px;color:#6b7280;line-height:1.5;margin:0 0 14px">
+          Informe a senha para visualizar os KPIs.
+        </p>
+        <input id="senhaKPIInput" type="password" class="input"
+          placeholder="Senha" autocomplete="current-password"
+          style="margin-bottom:14px"/>
+        <div style="display:flex;gap:10px;justify-content:flex-end">
+          <button id="senhaKPINao" class="btn btn-outline" type="button">Cancelar</button>
+          <button id="senhaKPIOk" class="btn btn-primary" type="button">
+            <i class="fa-solid fa-lock-open"></i> Acessar
+          </button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+
+    const input = overlay.querySelector('#senhaKPIInput');
+    const fechar = valor => {
+      document.body.removeChild(overlay);
+      resolve(valor);
+    };
+
+    overlay.querySelector('#senhaKPINao').onclick = () => fechar(null);
+    overlay.querySelector('#senhaKPIOk').onclick = () => fechar(input.value);
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter') fechar(input.value);
+      if (e.key === 'Escape') fechar(null);
+    });
+    setTimeout(() => input.focus(), 50);
+  });
+}
+
+async function toggleKPIsProtegido() {
+  const painel = document.getElementById('kpiPanel');
+  const visivel = painel && painel.style.display !== 'none';
+
+  if (visivel) {
+    setKPIsVisiveis(false);
+    return;
+  }
+
+  if (!kpisLiberados()) {
+    const senha = await solicitarSenhaKPIs();
+    if (senha !== KPI_SENHA) {
+      if (senha !== null) showToast('Senha inválida para indicadores.', 'warn');
+      return;
+    }
+    _kpisLiberados = true;
+  }
+
+  setKPIsVisiveis(true);
+}
+
+function totalOrcamento(o) {
+  if (typeof getResumoValoresExcel === 'function') {
+    return getResumoValoresExcel(o).totalFinal;
+  }
+  return (o.itens || []).reduce((acc, item) =>
+    acc + (Number(item.total) || ((Number(item.qtd) || 0) * (Number(item.valorUnit) || 0))),
+    0
+  );
+}
+
+function parseDataKPI(valor) {
+  if (!valor) return null;
+  const data = new Date(valor);
+  return isNaN(data) ? null : data;
+}
+
+function setKPI(id, valor) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = valor;
+}
+
+function renderListaKPI(id, itens, vazio) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  if (!itens.length) {
+    el.innerHTML = `<div class="kpi-empty">${vazio}</div>`;
+    return;
+  }
+  el.innerHTML = itens.map(item => `
+    <div class="kpi-list-row">
+      <span>${item.nome}</span>
+      <strong>${item.valor}</strong>
+    </div>
+  `).join('');
+}
+
+/* ═══════════════════════════════════════════════
+   KPI Produtos — Top 4 fixo + dropdown "ver todos"
+═══════════════════════════════════════════════ */
+function renderKPIProdutos(todosProdutos) {
+  const elTop4  = document.getElementById('kpiProdutosTop4');
+  const elExtra = document.getElementById('kpiProdutosExtra');
+  const elBtn   = document.getElementById('kpiBtnVerTodos');
+
+  if (!elTop4 || !elExtra || !elBtn) return;
+
+  if (!todosProdutos.length) {
+    elTop4.innerHTML = `<div class="kpi-empty">Ainda não há itens cadastrados.</div>`;
+    elExtra.innerHTML = '';
+    elBtn.style.display = 'none';
+    return;
+  }
+
+  const maxValor = todosProdutos[0].valor;
+
+  /* Gera HTML de uma linha de produto */
+  const linhaHTML = (p, i) => {
+    const pct = maxValor > 0 ? Math.round((p.valor / maxValor) * 100) : 0;
+    const isTop = i < 4;
+    return `
+      <div class="kpi-prod-row">
+        <span class="kpi-prod-rank${isTop ? ' top' : ''}">${i + 1}</span>
+        <span class="kpi-prod-nome" title="${p.nome}">${p.nome}</span>
+        <div class="kpi-prod-bar-wrap">
+          <div class="kpi-prod-bar" style="width:${pct}%"></div>
+        </div>
+        <span class="kpi-prod-qtd">${p.qtd} un.</span>
+        <span class="kpi-prod-valor">${formatMoeda(p.valor)}</span>
+      </div>`;
+  };
+
+  /* Top 4 */
+  elTop4.innerHTML = todosProdutos
+    .slice(0, 4)
+    .map((p, i) => linhaHTML(p, i))
+    .join('');
+
+  /* Restante (posição 5 em diante) */
+  const extras = todosProdutos.slice(4);
+  if (extras.length === 0) {
+    elExtra.innerHTML = '';
+    elBtn.style.display = 'none';
+    return;
+  }
+
+  elExtra.innerHTML = extras
+    .map((p, i) => linhaHTML(p, i + 4))
+    .join('');
+
+  /* Rótulo do botão: "Ver todos (N)" */
+  const totalLabel = document.getElementById('kpiBtnVerTodosLabel');
+  if (totalLabel) {
+    totalLabel.textContent = `Ver todos (${todosProdutos.length})`;
+  }
+  elBtn.style.display = 'flex';
+}
+
+/* Expande / recolhe a lista extra de produtos */
+function toggleProdutosExtra() {
+  const elExtra = document.getElementById('kpiProdutosExtra');
+  const elBtn   = document.getElementById('kpiBtnVerTodos');
+  const elLabel = document.getElementById('kpiBtnVerTodosLabel');
+  if (!elExtra || !elBtn) return;
+
+  const aberto = elExtra.classList.toggle('aberto');
+  elBtn.classList.toggle('aberto', aberto);
+
+  const totalItens = elExtra.querySelectorAll('.kpi-prod-row').length + 4;
+  if (elLabel) {
+    elLabel.textContent = aberto
+      ? 'Ver menos'
+      : `Ver todos (${totalItens})`;
+  }
+}
+
+/* ═══════════════════════════════════════════════
+   CORRIGIDO: verifica no catálogo se o item é
+   equipamento principal (imagem !== null).
+   Acessórios, mochilas, termopares etc. são pulados.
+═══════════════════════════════════════════════ */
+function isProdutoPrincipal(descricao) {
+  const texto = String(descricao || '').trim();
+
+  const match = texto.match(/^\[([^\]]+)\]\s*([^—]+)/);
+  if (!match) return true;
+
+  const modelo   = match[1].trim();
+  const nomeProd = match[2].trim();
+
+  const entrada = (typeof catalogoProdutos !== 'undefined' ? catalogoProdutos : [])
+    .find(p =>
+      p.modelo === modelo &&
+      p.produto.toLowerCase() === nomeProd.toLowerCase()
+    );
+
+  if (!entrada) return true;
+  return entrada.imagem !== null;
+}
+
+/* ═══════════════════════════════════════════════
+   CORRIGIDO: retorna "ASE100 — Analisador de..."
+   em vez de apenas o código do modelo.
+═══════════════════════════════════════════════ */
+function nomeProdutoKPI(descricao) {
+  const texto = String(descricao || '').replace(/\s+/g, ' ').trim();
+  if (!texto) return 'Item sem descrição';
+
+  const match = texto.match(/^\[([^\]]+)\]\s*(.+?)(?:\s*(?:—|â€”)\s*|$)/);
+  if (match) {
+    const modelo = match[1].trim();
+    const nome   = match[2].trim();
+    return `[${modelo}] ${nome}`.slice(0, 64);
+  }
+
+  return texto.split('—')[0].split('â€”')[0].split(' - ')[0].trim().slice(0, 64) || 'Item sem descrição';
+}
+
+function renderKPIs(orcamentos) {
+  const ativos = [
+    'novo',
+    'em_contato',
+    'proposta_enviada',
+    'followup_7_dias',
+    'followup_15_dias',
+    'em_negociacao',
+    'aguardando_aprovacao'
+  ];
+  const perdas = [
+    'perdido','reprovado','cancelado','sem_verba','sem_retorno','timing_ruim',
+    'negociacao_nao_evoluiu','ficha_reprovada','concorrente_preco',
+    'concorrente_prazo','concorrente_motivo_nao_declarado','concorrente_outros'
+  ];
+
+  const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
+  const limite7 = new Date(hoje);
+  limite7.setDate(limite7.getDate() + 7);
+
+  let valorAberto = 0;
+  let qtdAberto = 0;
+  let valorGanhoMes = 0;
+  let qtdGanhoMes = 0;
+  let qtdGanho = 0;
+  let somaTotal = 0;
+  let vencendo = 0;
+
+  const porVendedor = new Map();
+  const porMotivo = new Map();
+  const porProduto = new Map();
+
+  orcamentos.forEach(o => {
+    const status = o.status || 'novo';
+    const total = totalOrcamento(o);
+    somaTotal += total;
+
+    if (ativos.includes(status)) {
+      valorAberto += total;
+      qtdAberto += 1;
+
+      const validade = parseDataKPI(o.validoAte);
+      if (validade) {
+        validade.setHours(0, 0, 0, 0);
+        if (validade >= hoje && validade <= limite7) vencendo += 1;
+      }
+    }
+
+    if (status === 'ganho') {
+      qtdGanho += 1;
+      const vendedor = o.vendedor || 'Sem vendedor';
+      porVendedor.set(vendedor, (porVendedor.get(vendedor) || 0) + total);
+
+      const dataGanho =
+        parseDataKPI(o.atualizadoEm) ||
+        parseDataKPI(o.criadoEm) ||
+        parseDataKPI(o.emissao);
+      if (dataGanho &&
+          dataGanho.getFullYear() === hoje.getFullYear() &&
+          dataGanho.getMonth() === hoje.getMonth()) {
+        valorGanhoMes += total;
+        qtdGanhoMes += 1;
+      }
+    }
+
+    if (perdas.includes(status)) {
+      const label = STATUS_MAP[status]?.label?.replace(/[^\p{L}\p{N}\s—.-]/gu, '').trim() || status;
+      porMotivo.set(label, (porMotivo.get(label) || 0) + 1);
+    }
+
+    (o.itens || []).forEach(item => {
+      if (!isProdutoPrincipal(item.descricao)) return;
+
+      const nome = nomeProdutoKPI(item.descricao);
+      const atual = porProduto.get(nome) || { qtd: 0, valor: 0 };
+      atual.qtd += Number(item.qtd) || 1;
+      atual.valor += Number(item.total) || 0;
+      porProduto.set(nome, atual);
+    });
+  });
+
+  const ticketMedio = orcamentos.length ? somaTotal / orcamentos.length : 0;
+  const conversao = orcamentos.length ? (qtdGanho / orcamentos.length) * 100 : 0;
+
+  setKPI('kpiValorAberto', formatMoeda(valorAberto));
+  setKPI('kpiQtdAberto', `${qtdAberto} orçamento(s) ativos`);
+  setKPI('kpiGanhoMes', formatMoeda(valorGanhoMes));
+  setKPI('kpiQtdGanhoMes', `${qtdGanhoMes} orçamento(s) ganhos no mês`);
+  setKPI('kpiConversao', `${conversao.toFixed(1).replace('.', ',')}%`);
+  setKPI('kpiBaseConversao', `${qtdGanho} de ${orcamentos.length} orçamento(s)`);
+  setKPI('kpiTicketMedio', formatMoeda(ticketMedio));
+  setKPI('kpiVencendo', String(vencendo));
+  setKPI('kpiVencendoSub', `${vencendo} orçamento(s) ativos vencendo em até 7 dias`);
+
+  renderListaKPI(
+    'kpiTopVendedores',
+    Array.from(porVendedor.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3)
+      .map(([nome, valor]) => ({ nome, valor: formatMoeda(valor) })),
+    'Ainda não há orçamentos ganhos.'
+  );
+
+  renderListaKPI(
+    'kpiMotivosPerda',
+    Array.from(porMotivo.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 4)
+      .map(([nome, qtd]) => ({ nome, valor: `${qtd}` })),
+    'Ainda não há perdas registradas.'
+  );
+
+  /* ── Produtos — todos, ordenados por qtd ── */
+  const todosProdutos = Array.from(porProduto.entries())
+    .sort((a, b) => b[1].valor - a[1].valor)
+    .map(([nome, info]) => ({ nome, qtd: info.qtd, valor: info.valor }));
+
+  renderKPIProdutos(todosProdutos);
+}
+
+async function renderTabela() {
+  const orcamentos = await getOrcamentos();
+  renderKPIs(orcamentos);
+  const search     = document.getElementById('searchInput').value.toLowerCase();
+  const status     = document.getElementById('filterStatus').value;
+
+  let filtrados = orcamentos.filter(o => {
+    const matchSearch =
+      (o.razaoSocial || '').toLowerCase().includes(search) ||
+      (o.numero      || '').toLowerCase().includes(search) ||
+      (o.vendedor    || '').toLowerCase().includes(search);
+    const statusReal  = o.status || 'novo';
+    const matchStatus = status === '' || statusReal === status;
+    return matchSearch && matchStatus;
+  });
+
+  filtrados.sort((a, b) => (b.numero || '').localeCompare(a.numero || ''));
+
+  /* ── Tabela desktop ── */
+  const tbody    = document.getElementById('tbodyOrcamentos');
+  const semDados = document.getElementById('semDados');
+  tbody.innerHTML = '';
+
+  if (filtrados.length === 0) {
+    semDados.style.display = 'flex';
+  } else {
+    semDados.style.display = 'none';
+    filtrados.forEach(o => {
+      const followUpAlert = buildFollowUpAlert(o);
+      tbody.innerHTML += `
+        <tr>
+          <td><strong>${o.numero || '—'}</strong></td>
+          <td>${o.razaoSocial || '—'}</td>
+          <td>${o.cnpj        || '—'}</td>
+          <td>${o.vendedor    || '—'}</td>
+          <td>${formatDateBR(o.emissao)}</td>
+          <td>${formatDateBR(o.validoAte)}</td>
+          <td>${buildStatusCell(o.id, o.status)}${followUpAlert}</td>
+          <td class="acoes">
+            <a href="visualizar.html?id=${o.id}" class="btn-icon" title="Visualizar"><i class="fa-solid fa-eye"></i></a>
+            <a href="novo.html?id=${o.id}" class="btn-icon" title="Editar"><i class="fa-solid fa-pen"></i></a>
+            <button class="btn-icon-clonar" title="Clonar orçamento" onclick="handleClonar('${o.id}')"><i class="fa-solid fa-copy"></i></button>
+            <button class="btn-icon danger" title="Excluir" onclick="excluir('${o.id}')"><i class="fa-solid fa-trash"></i></button>
+          </td>
+        </tr>`;
+    });
+  }
+
+  /* ── Cards mobile ── */
+  const lista = document.getElementById('listaMobile');
+  lista.innerHTML = '';
+
+  if (filtrados.length === 0) {
+    lista.innerHTML = `
+      <div class="sem-dados-mobile">
+        <i class="fa-solid fa-folder-open"></i>
+        <p>Nenhum orçamento encontrado.</p>
+        <a href="novo.html" class="btn btn-primary">Criar primeiro orçamento</a>
+      </div>`;
+    return;
+  }
+
+  filtrados.forEach(o => {
+    const card = document.createElement('div');
+    const followUpAlert = buildFollowUpAlert(o);
+    card.className = 'orc-card';
+    card.innerHTML = `
+      <div class="orc-card-top">
+        <span class="orc-numero"># ${o.numero || '—'}</span>
+        <div>${buildStatusCell(o.id, o.status, 'padding:3px 8px;font-size:11px;')}${followUpAlert}</div>
+      </div>
+      <div class="orc-cliente">${o.razaoSocial || '—'}</div>
+      <div class="orc-info-grid">
+        <div class="orc-info-item"><span class="orc-info-label">CNPJ / CPF</span><span class="orc-info-value">${o.cnpj || '—'}</span></div>
+        <div class="orc-info-item"><span class="orc-info-label">Vendedor</span><span class="orc-info-value">${o.vendedor || '—'}</span></div>
+        <div class="orc-info-item"><span class="orc-info-label">Emissão</span><span class="orc-info-value">${formatDateBR(o.emissao)}</span></div>
+        <div class="orc-info-item"><span class="orc-info-label">Válido até</span><span class="orc-info-value">${formatDateBR(o.validoAte)}</span></div>
+      </div>
+      <div class="orc-card-actions">
+        <a href="visualizar.html?id=${o.id}" class="orc-btn orc-btn-ver"><i class="fa-solid fa-eye"></i> Ver</a>
+        <a href="novo.html?id=${o.id}" class="orc-btn orc-btn-editar"><i class="fa-solid fa-pen"></i> Editar</a>
+        <button class="orc-btn orc-btn-clonar" title="Clonar" onclick="handleClonar('${o.id}')"><i class="fa-solid fa-copy"></i></button>
+        <button class="orc-btn orc-btn-excluir" onclick="excluir('${o.id}')"><i class="fa-solid fa-trash"></i></button>
+      </div>`;
+    lista.appendChild(card);
+  });
+}
+
+/* Atualiza cor do badge e texto do tooltip quando o select muda */
+function atualizarBadgeSelect(el) {
+  const st = STATUS_MAP[el.value] || STATUS_MAP.novo;
+  el.className = 'status-select ' + st.cls;
+  const tip = el.parentElement.querySelector('.status-tip');
+  if (tip) tip.textContent = st.desc;
+}
+
+async function atualizarStatus(id, novoStatus) {
+  showToast('⏳ Alterando status...', 'info');
+  try {
+    const orcamento = await getOrcamento(id);
+    if (!orcamento) { showToast('❌ Orçamento não encontrado!', 'error'); return; }
+    orcamento.status = novoStatus;
+    const salvo = await saveOrcamento(orcamento);
+    if (salvo) {
+      showToast('✅ Status atualizado!', 'success');
+      await renderTabela();
+    } else { throw new Error('Falha ao salvar'); }
+  } catch (err) {
+    console.error('Erro ao atualizar status:', err);
+    showToast('❌ Erro ao atualizar o status.', 'error');
+  }
+}
+
+async function handleClonar(id) {
+  const original = await getOrcamento(id);
+  if (!original) { showToast('❌ Orçamento não encontrado!', 'error'); return; }
+  const ok = await confirmar(
+    `📋 Clonar orçamento <strong>${original.numero}</strong>?<br><span style="font-size:12px;color:#6b7280;font-weight:400">O clone receberá o sufixo -A, -B, -C...</span>`,
+    { textoBotaoOk: 'Clonar', corBotaoOk: '#0e9f6e', iconeBotaoOk: '📋' }
+  );
+  if (!ok) return;
+  showToast('⏳ Clonando...', 'info');
+  try {
+    const lista       = await getOrcamentos();
+    const partes      = original.numero.split('-');
+    const ultimaParte = partes[partes.length - 1];
+    const ehSufixo    = /^[A-Z]$/.test(ultimaParte);
+    const baseNumero  = ehSufixo ? partes.slice(0, -1).join('-') : original.numero;
+    const clones      = lista.filter(o => o.numero && o.numero.startsWith(baseNumero));
+    const proxLetra   = String.fromCharCode(64 + clones.length);
+    const clone = {
+      ...original,
+      id: 'orc_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+      numero: `${baseNumero}-${proxLetra}`,
+      status: 'novo',
+      criadoEm: new Date().toISOString(),
+      destaques: {}
+    };
+    const salvo = await saveOrcamento(clone);
+    if (salvo) {
+      showToast(`✅ Orçamento ${clone.numero} criado!`, 'success');
+      await renderTabela();
+    } else { showToast('❌ Erro ao clonar.', 'error'); }
+  } catch (err) {
+    console.error('Erro ao clonar:', err);
+    showToast('❌ Erro ao clonar.', 'error');
+  }
+}
+
+async function excluir(id) {
+  const ok = await confirmar('Deseja excluir este orçamento?');
+  if (!ok) return;
+  try {
+    await deleteOrcamento(id);
+    showToast('✅ Orçamento excluído!', 'success');
+    await renderTabela();
+  } catch (err) {
+    console.error('Erro ao excluir:', err);
+    showToast('❌ Erro ao excluir.', 'error');
+  }
+}
+
+</script>
+</body>
+</html>

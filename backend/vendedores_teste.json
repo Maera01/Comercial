@@ -1,0 +1,37 @@
+[
+  {
+    "nome": "Administrador",
+    "login": "master",
+    "senha": "maera2026",
+    "master": true,
+    "perfil": "admin"
+  },
+  {
+    "nome": "Larissa",
+    "login": "larissa",
+    "senha": "123",
+    "master": true,
+    "perfil": "admin"
+  },
+  {
+    "nome": "Hanna Araujo",
+    "login": "hanna",
+    "senha": "123",
+    "master": false,
+    "perfil": "vendedor"
+  },
+  {
+    "nome": "Hudson",
+    "login": "hudson",
+    "senha": "123",
+    "master": false,
+    "perfil": "vendedor"
+  },
+  {
+    "nome": "Lucas Carvalho",
+    "login": "lucas",
+    "senha": "123",
+    "master": false,
+    "perfil": "vendedor"
+  }
+]

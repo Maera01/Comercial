@@ -1,0 +1,735 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<title>MAERA – Visualizar Orçamento</title>
+<link rel="stylesheet" href="assets/style.css"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+
+  /* ── Quebras de página ── */
+  .doc-table th, .doc-table td { font-size:11px; padding:6px 8px; }
+  .doc-table th  { white-space:nowrap; }
+  .doc-section   { page-break-inside:avoid; break-inside:avoid; }
+  .doc-header    { page-break-inside:avoid; break-inside:avoid; }
+  .doc-table tr  { page-break-inside:avoid; break-inside:avoid; }
+  .doc-totais    { page-break-inside:avoid; break-inside:avoid; }
+  .doc-footer    { page-break-inside:avoid; break-inside:avoid; }
+  .sec-item      { page-break-inside:avoid; break-inside:avoid; }
+
+  /* ══════════════════════════════════════════
+     CABEÇALHO DO DOCUMENTO
+  ══════════════════════════════════════════ */
+  .doc-header-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 0;
+  }
+  .doc-logo-col {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    flex-shrink: 0;
+    width: 140px;
+  }
+  #logoDoc {
+    height: 30px;
+    width: auto;
+    max-width: 180px;
+    object-fit: contain;
+    display: none;
+  }
+  #logoDocFallback {
+    width: 56px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #F24105;
+    color: #fff;
+    border-radius: 10px;
+    font-size: 22px;
+  }
+  .doc-empresa-col { flex: 1; text-align: right; }
+
+  /* ── Faixa "PROPOSTA COMERCIAL" ── */
+  .doc-banner {
+    background: linear-gradient(135deg, #F24105 0%, #F24105 100%);
+    color: #fff;
+    padding: 10px 20px;
+    margin: 14px -36px 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .doc-banner-titulo { font-size:16px; font-weight:900; letter-spacing:1.5px; text-transform:uppercase; }
+  .doc-banner-numero { font-size:13px; font-weight:700; opacity:.9; }
+
+  /* ── Metadados ── */
+  .doc-meta-bar {
+    display: flex; gap: 24px; padding: 10px 0 6px;
+    font-size: 12px; color: #374151; flex-wrap: wrap;
+    border-bottom: 2px solid #F24105; margin-bottom: 18px;
+  }
+  .doc-meta-bar span   { color:#6b7280; font-weight:500; }
+  .doc-meta-bar strong { color:#111827; }
+
+  /* ── Títulos de seção ── */
+  .doc-section-title {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 11px; font-weight: 800; color: #F24105;
+    text-transform: uppercase; letter-spacing: .8px;
+    border-bottom: 1.5px solid #FFE4D6; padding: 6px 10px 7px;
+    border-radius: 6px 6px 0 0;
+    background: linear-gradient(90deg, rgba(255,107,44,.06) 0%, transparent 70%);
+    margin-bottom: 12px;
+  }
+
+  /* ── Tabela de itens ── */
+  .doc-table { width:100%; border-collapse:collapse; font-size:12px; table-layout:fixed; }
+  .doc-table thead tr { background: linear-gradient(135deg, #F24105 0%, #F24105 100%); }
+  .doc-table th {
+    color:#fff; padding:8px 10px; text-align:left; font-weight:700;
+    font-size:10.5px; text-transform:uppercase; letter-spacing:.3px;
+    white-space:nowrap; overflow:hidden;
+  }
+  .doc-table td {
+    padding:8px 10px; border-bottom:1px solid #f3f4f6;
+    vertical-align:top; word-break:break-word; overflow-wrap:break-word;
+    white-space:normal; line-height:1.5; color:#374151;
+  }
+  .doc-table tbody tr:nth-child(even) td { background:#fdf8f6; }
+  .doc-table tbody tr:hover td { background:rgba(255,107,44,.04); }
+  .doc-table td:nth-child(7), .doc-table td:nth-child(8) { text-align:right; }
+
+  @media (max-width: 768px) {
+    .doc-table { table-layout:auto; font-size:11px; }
+    .doc-table th, .doc-table td { padding:6px 5px; }
+    .doc-table th:nth-child(2), .doc-table td:nth-child(2) { min-width:120px; white-space:normal; word-break:break-word; }
+    .doc-table th:nth-child(1), .doc-table td:nth-child(1) { width:24px; }
+    .doc-table th:nth-child(3), .doc-table td:nth-child(3),
+    .doc-table th:nth-child(4), .doc-table td:nth-child(4) { width:30px; }
+    .doc-table th:nth-child(5), .doc-table td:nth-child(5),
+    .doc-table th:nth-child(6), .doc-table td:nth-child(6) { width:55px; white-space:nowrap; }
+    .doc-table th:nth-child(7), .doc-table td:nth-child(7),
+    .doc-table th:nth-child(8), .doc-table td:nth-child(8) { width:65px; white-space:nowrap; text-align:right; }
+  }
+
+  /* ══════════════════════════════════════════
+     BLOCO DE TOTAIS
+     ✅ Wrapper em flex-column + align-items:flex-end
+        → caixa e linha DIFAL ficam à direita
+     ✅ Caixa e linha DIFAL com width:fit-content
+        → cada um ocupa o espaço que precisa
+     ✅ Linha DIFAL com white-space:nowrap
+        → nunca quebra linha
+     ✅ JS iguala a largura da caixa à linha DIFAL
+        (não o contrário) para ambas ficarem alinhadas
+  ══════════════════════════════════════════ */
+  #docTotaisWrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    margin-top: 16px;
+  }
+
+  .doc-totais-box {
+    border: 2px solid #F24105;
+    border-radius: 10px;
+    overflow: hidden;
+    /* ✅ largura mínima garantida; será alargada pelo JS se necessário */
+    min-width: 280px;
+    width: fit-content;
+    box-sizing: border-box;
+  }
+
+  .doc-total-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 14px;
+    font-size: 12.5px;
+    color: #374151;
+    border-bottom: 1px solid #f3f4f6;
+    gap: 24px;
+  }
+  .doc-total-row:last-child { border-bottom: none; }
+
+  .doc-total-final {
+    background: linear-gradient(135deg, #F24105 0%, #F24105 100%);
+    color: #fff !important;
+    font-size: 14px !important;
+    font-weight: 800 !important;
+    padding: 10px 14px !important;
+  }
+  .doc-total-final span,
+  .doc-total-final span:last-child { color:#fff !important; font-weight:800; }
+
+  /* ── Linha DIFAL externa ── */
+  .doc-difal-external {
+    display: none;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 14px;
+    font-size: 12.5px;
+    color: #374151;
+    border-top: 1px dashed #e5e7eb;
+    margin-top: 6px;
+    box-sizing: border-box;
+    /* ✅ nowrap: texto fica em linha única, a largura se expande naturalmente */
+    white-space: nowrap;
+    width: fit-content;
+    min-width: 280px;
+  }
+
+  .doc-difal-external .difal-left {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .doc-difal-external .difal-left #docDifalBadge {
+    font-size: 10px;
+    padding: 1px 7px;
+    border-radius: 10px;
+    font-weight: 700;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .doc-difal-external #docDifalTotal {
+    font-weight: 700;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  /* ── Seções de texto ── */
+  .sec-titulo {
+    font-size:11px; font-weight:800; color:#F24105; text-transform:uppercase;
+    letter-spacing:.8px; border-bottom:1.5px solid #FFE4D6; padding:6px 10px 7px;
+    border-radius:6px 6px 0 0; background:rgba(255,107,44,.05); margin-bottom:10px;
+  }
+  .sec-texto { font-size:11.5px; color:#374151; line-height:1.7; margin-bottom:6px; word-break:break-word; }
+  .sec-item {
+    display:flex; align-items:flex-start; gap:8px;
+    font-size:11.5px; color:#374151; line-height:1.6; margin-bottom:6px; word-break:break-word;
+  }
+  .sec-item::before { content:'•'; color:#F24105; font-weight:900; flex-shrink:0; margin-top:1px; }
+
+  /* ── Simulador ── */
+  .sim-doc-header-row { display:flex; align-items:center; gap:10px; padding:8px 12px; border-radius:8px; margin-bottom:8px; flex-wrap:wrap; }
+  .sim-doc-checkbox, .sim-doc-checkbox-boleto {
+    width:18px; height:18px; background:#F24105; border-radius:4px;
+    display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  }
+  .sim-doc-checkbox i, .sim-doc-checkbox-boleto i { font-size:10px; color:#000; }
+  .sim-doc-badge, .sim-doc-badge-boleto {
+    background:#F24105; color:#fff; font-size:10px; font-weight:700;
+    padding:2px 10px; border-radius:20px; flex-shrink:0;
+  }
+  .sim-doc-hint { font-size:11px; color:#9ca3af; margin-left:auto; font-style:italic; }
+
+  .aviso-difal-doc {
+    display:none; margin:0 0 10px 0; padding:8px 12px;
+    background:#fff7ed; border-left:4px solid #F24105; border-radius:6px;
+    font-size:12px; color:#c2410c; font-weight:600; line-height:1.6;
+  }
+
+  /* ── Rodapé ── */
+  .doc-footer {
+    margin-top:24px; background:#f9fafb; border:1px solid #e5e7eb;
+    border-radius:8px; padding:14px 18px;
+    display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;
+  }
+  .doc-footer-texto  { font-size:11.5px; color:#6b7280; font-style:italic; }
+  .doc-footer-pagina { font-size:10px; color:#9ca3af; font-weight:600; text-align:right; }
+  .doc-footer-marca  { font-size:10px; color:#F24105; font-weight:700; letter-spacing:.3px; }
+
+  /* ── Barras / botões ── */
+  .logo-bar { display:flex; align-items:center; gap:14px; background:#fff; border:1px solid #e5e7eb; border-radius:10px; padding:12px 20px; margin-bottom:20px; flex-wrap:wrap; }
+  .btn-upload { display:inline-flex; align-items:center; gap:6px; padding:7px 16px; border-radius:8px; font-size:12.5px; font-weight:600; cursor:pointer; background:#F24105; color:#fff; font-family:'Inter',sans-serif; border:none; }
+  .btn-remove { display:inline-flex; align-items:center; gap:6px; padding:7px 16px; border-radius:8px; font-size:12.5px; font-weight:600; cursor:pointer; border:1.5px solid #e5e7eb; background:#fff; color:#6b7280; font-family:'Inter',sans-serif; }
+  .btn-remove:hover { border-color:#e02424; color:#e02424; }
+  .btn-pdf-fixo { display:flex; align-items:center; gap:10px; padding:14px 24px; border-radius:12px; border:none; background:#F24105; color:#fff; font-size:15px; font-weight:700; font-family:'Inter',sans-serif; cursor:pointer; box-shadow:0 6px 24px rgba(255,107,44,.35); }
+  .btn-pdf-fixo:hover { transform:translateY(-2px); box-shadow:0 8px 28px rgba(255,107,44,.45); }
+
+  @media (max-width: 768px) {
+    .doc-header-wrap { flex-wrap:wrap; }
+    .doc-logo-col { width:100px; }
+    .doc-banner { margin:14px -16px 0; padding:10px 16px; }
+    .logo-bar { flex-direction:column; align-items:flex-start; }
+    .top-bar .action-group { flex-direction:column; gap:8px; width:100%; }
+    .top-bar .action-group .btn { width:100%; justify-content:center; }
+    .sim-doc-hint { display:none; }
+    .doc-table { table-layout:auto; font-size:10px; }
+    .doc-table th, .doc-table td { padding:5px 4px; white-space:normal; word-break:normal; overflow-wrap:anywhere; }
+    .doc-table th:nth-child(4), .doc-table td:nth-child(4),
+    .doc-table th:nth-child(5), .doc-table td:nth-child(5),
+    .doc-table th:nth-child(6), .doc-table td:nth-child(6) { display:none; }
+    .doc-table td img { width:48px !important; height:36px !important; }
+    #docOrcamento { padding:16px !important; }
+    .doc-banner { margin:14px -16px 0 !important; }
+    /* mobile: deixa a linha DIFAL ocupar toda a largura disponível */
+    .doc-difal-external { width:100% !important; min-width:unset !important; font-size:10.5px; }
+    .doc-difal-external .difal-left #docDifalBadge { font-size:9px; padding:1px 5px; }
+    .doc-totais-box { width:100% !important; min-width:unset !important; }
+    #docTotaisWrapper { align-items:stretch; }
+  }
+
+  @media print {
+    .no-print, .sidebar, .top-bar, .logo-bar, .btn-fixo-container { display:none !important; }
+    .main-content { margin-left:0 !important; padding:0 !important; }
+    .documento { box-shadow:none !important; border:none !important; }
+    body { background:#fff !important; }
+  }
+  @media print, screen {
+    .doc-section, .doc-totais-box, .sim-doc-header-row, tr, .doc-total-row { break-inside:avoid !important; page-break-inside:avoid !important; }
+    .doc-table tbody tr { break-inside:avoid; }
+    #simCartaoTabela, #simBoletoTabela { break-inside:auto !important; }
+    img { break-inside:avoid !important; max-height:95vh; }
+  }
+</style>
+</head>
+<body>
+<div class="layout">
+
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <img src="assets/logo.png" alt="MAERA"
+      style="height:38px;width:auto;max-width:160px;object-fit:contain"
+      onerror="this.style.display='none';document.getElementById('fbVis').style.display='flex'"/>
+    <div id="fbVis" style="display:none;align-items:center;gap:10px">
+      <span class="logo-icon"><i class="fa-solid fa-file-invoice-dollar"></i></span>
+      <span class="logo-text">MAERA</span>
+    </div>
+  </div>
+  <nav class="sidebar-nav">
+    <a href="index.html" class="nav-item"><i class="fa-solid fa-house"></i> Orçamento</a>
+    <a href="novo.html" class="nav-item"><i class="fa-solid fa-plus"></i> Novo Orçamento</a>
+  </nav>
+</aside>
+
+<main class="main-content">
+
+  <header class="top-bar no-print">
+    <h1 class="page-title">👁️ Visualizar Orçamento</h1>
+    <div class="action-group">
+      <a id="btnEditar" href="#" class="btn btn-outline"><i class="fa-solid fa-pen"></i> Editar</a>
+      <button class="btn btn-secondary" onclick="window.print()"><i class="fa-solid fa-print"></i> Imprimir</button>
+      <button class="btn btn-primary" onclick="gerarPDF()"><i class="fa-solid fa-file-pdf"></i> Gerar PDF</button>
+    </div>
+  </header>
+
+  <div class="logo-bar no-print">
+    <span style="font-size:13px;font-weight:700;color:#374151">🖼️ Logo do Documento:</span>
+    <div style="width:44px;height:44px;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;background:#f9fafb;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+      <img id="logoPreviewBar" style="width:100%;height:100%;object-fit:contain;display:none" alt=""/>
+      <i id="logoIconBar" class="fa-solid fa-image" style="font-size:18px;color:#d1d5db"></i>
+    </div>
+    <label for="inputLogoVis" class="btn-upload"><i class="fa-solid fa-upload"></i> Carregar Logo</label>
+    <button class="btn-remove" onclick="removerLogo()"><i class="fa-solid fa-trash"></i> Remover</button>
+    <input type="file" id="inputLogoVis" accept="image/*" style="display:none" onchange="carregarLogo(this)"/>
+    <span style="font-size:11px;color:#9ca3af">PNG, JPG ou SVG — Máx. 2MB</span>
+  </div>
+
+  <div id="docOrcamento" class="documento" style="padding:32px 36px">
+
+    <div class="doc-header-wrap">
+      <div class="doc-logo-col">
+        <img id="logoDoc" alt="MAERA"/>
+        <div id="logoDocFallback"><i class="fa-solid fa-industry"></i></div>
+      </div>
+      <div class="doc-empresa-col">
+        <div class="doc-empresa-nome">MAERA INDÚSTRIA DE TECNOLOGIA LTDA</div>
+        <div class="doc-empresa-info">CNPJ: 12.627.894/0001-23 | IE: 116718660019</div>
+        <div class="doc-empresa-info">Rua Vinte e Oito de Setembro, 319 – Esplanada – Belo Horizonte/MG – CEP 30280-050</div>
+        <div class="doc-empresa-info">✉ maera@maera.com.br | 📱 +55 31 98041-4229 / +55 31 3524-1456</div>
+      </div>
+    </div>
+
+    <div class="doc-banner">
+      <span class="doc-banner-titulo">Proposta Comercial</span>
+      <span class="doc-banner-numero" id="docNumero"></span>
+    </div>
+
+    <div class="doc-meta-bar">
+      <div><span>Emissão: </span><strong id="docEmissao"></strong></div>
+      <div><span>Válido até: </span><strong id="docValidade"></strong></div>
+      <div><span>Vendedor: </span><strong id="docVendedor"></strong></div>
+    </div>
+
+    <div class="doc-section">
+      <div class="doc-section-title"><i class="fa-solid fa-building" style="color:#F24105"></i> Informações da MAERA</div>
+      <div class="doc-grid-2">
+        <div><span class="doc-label">Razão Social:</span> MAERA INDÚSTRIA DE TECNOLOGIA LTDA</div>
+        <div><span class="doc-label">Inscrição Estadual:</span> 116718660019</div>
+        <div><span class="doc-label">CNPJ:</span> 12.627.894/0001-23</div>
+        <div><span class="doc-label">Número:</span> 319</div>
+        <div><span class="doc-label">Logradouro:</span> Rua Vinte e Oito de Setembro</div>
+        <div><span class="doc-label">CEP:</span> 30280-050</div>
+        <div><span class="doc-label">Bairro:</span> Esplanada</div>
+        <div><span class="doc-label">Estado:</span> MG</div>
+        <div><span class="doc-label">Cidade:</span> Belo Horizonte</div>
+        <div><span class="doc-label">Complemento:</span> Casa</div>
+        <div><span class="doc-label">E-mail:</span> maera@maera.com.br</div>
+        <div><span class="doc-label">WhatsApp:</span> +55 31 98041-4229 / +55 31 3524-1456</div>
+      </div>
+    </div>
+
+    <hr class="doc-divider"/>
+
+    <div class="doc-section">
+      <div class="doc-section-title"><i class="fa-solid fa-user" style="color:#F24105"></i> Informações do Cliente</div>
+      <div class="doc-grid-2">
+        <div><span class="doc-label">Razão Social:</span><span id="dRazaoSocial"></span></div>
+        <div><span class="doc-label">Contribuinte:</span><span id="dContribuinte"></span></div>
+        <div><span class="doc-label">CNPJ / CPF:</span><span id="dCnpj"></span></div>
+        <div><span class="doc-label">Contato:</span><span id="dContato"></span></div>
+        <div><span class="doc-label">Logradouro:</span><span id="dLogradouro"></span></div>
+        <div><span class="doc-label">Número:</span><span id="dNumEndereco"></span></div>
+        <div><span class="doc-label">Complemento:</span><span id="dComplemento"></span></div>
+        <div><span class="doc-label">Bairro:</span><span id="dBairro"></span></div>
+        <div><span class="doc-label">CEP:</span><span id="dCep"></span></div>
+        <div><span class="doc-label">Cidade:</span><span id="dCidade"></span></div>
+        <div><span class="doc-label">Estado:</span><span id="dEstado"></span></div>
+        <div><span class="doc-label">Insc. Estadual:</span><span id="dInscricaoEstadual"></span></div>
+        <div><span class="doc-label">E-mail:</span><span id="dEmail"></span></div>
+        <div><span class="doc-label">Telefone:</span><span id="dTelefone"></span></div>
+        <div id="rowPais" style="display:none"><span class="doc-label">País:</span><span id="dPais"></span></div>
+        <div id="rowTaxId" style="display:none"><span class="doc-label">Tax ID / VAT:</span><span id="dTaxId"></span></div>
+        <div id="rowMoeda" style="display:none"><span class="doc-label">Moeda:</span><span id="dMoeda"></span></div>
+        <div id="rowCotacaoDolar" style="display:none"><span class="doc-label">Cotação USD:</span><span id="dCotacaoDolar"></span></div>
+        <div id="rowIncoterm" style="display:none"><span class="doc-label">Incoterm:</span><span id="dIncoterm"></span></div>
+      </div>
+      <div style="margin-top:8px">
+        <span class="doc-label">Informações adicionais:</span>
+        <span id="dInfoAdicional"></span>
+      </div>
+    </div>
+
+    <div class="doc-section">
+      <div class="doc-section-title"><i class="fa-solid fa-list" style="color:#F24105"></i> Itens do Orçamento</div>
+      <div style="overflow-x:auto">
+        <table class="doc-table">
+          <thead>
+            <tr>
+              <th style="width:24px;text-align:center">#</th>
+              <th>Descrição</th>
+              <th style="width:32px;text-align:center">Qtd</th>
+              <th style="width:38px;text-align:center">Und</th>
+              <th style="width:76px;text-align:center">Sem Calib.</th>
+              <th style="width:76px;text-align:center">Com Calib.</th>
+              <th style="width:80px;text-align:right">Vlr Unit.</th>
+              <th style="width:80px;text-align:right">Total</th>
+            </tr>
+          </thead>
+          <tbody id="docItens"></tbody>
+        </table>
+      </div>
+
+      <!--
+        TOTAIS
+        Lógica de largura:
+        1. Linha DIFAL renderiza com white-space:nowrap → ocupa sua largura natural
+        2. JS mede essa largura e aplica na caixa de totais (se for maior)
+        3. Ambas ficam com a mesma largura, alinhadas à direita pelo wrapper
+      -->
+      <div class="doc-totais" id="docTotaisWrapper">
+
+        <div class="doc-totais-box" id="docTotaisBox">
+          <div class="doc-total-row">
+            <span>Subtotal</span>
+            <span id="docSubtotal"></span>
+          </div>
+          <div class="doc-total-row" id="docDescontoRow">
+            <span>Desconto</span>
+            <span id="docDesconto" style="color:#40e024"></span>
+          </div>
+          <div class="doc-total-row doc-total-final" id="docTotalFinalRow">
+            <span>TOTAL</span>
+            <span id="docTotal"></span>
+          </div>
+        </div>
+
+        <div id="docDifalRow" class="doc-difal-external">
+          <span class="difal-left">
+            ⚖️ Imposto DIFAL Aproximado
+            <span id="docDifalBadge" style="background:#fee2e2;color:#991b1b;">
+              Recolhimento do Vendedor
+            </span>
+          </span>
+          <span id="docDifalTotal" style="color:#c2410c;font-weight:700"></span>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="doc-section">
+      <div class="doc-section-title"><i class="fa-solid fa-note-sticky" style="color:#F24105"></i> Observações</div>
+      <p id="docObs" class="doc-obs"></p>
+    </div>
+
+    <div class="doc-section" id="secDetalhamentoDoc" style="display:none">
+      <div class="sec-titulo">📊 Detalhamento Fiscal</div>
+      <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:14px 16px">
+        <div id="boxInfoOperacao" style="display:none;margin-bottom:10px;padding:8px 12px;background:rgba(255,107,44,.08);border-radius:6px;border-left:3px solid #F24105;font-size:11.5px">
+          <span style="color:#F24105;font-weight:700">Operação: </span>
+          <span id="docInfoOperacao" style="color:#374151"></span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;font-size:12px">
+          <div>
+            <span style="color:#6b7280;font-weight:600">ICMS Estado de Destino (DIFAL):</span>
+            <span id="docDifalLabel" style="color:#111827;font-weight:700;margin-left:4px">N/A</span>
+            <div id="docDifalInfo" style="font-size:10.5px;color:#6b7280;margin-top:2px"></div>
+          </div>
+          <div>
+            <span style="color:#6b7280;font-weight:600">Tipo de Frete:</span>
+            <span id="docTipoFrete" style="font-weight:700;margin-left:4px">CIF</span>
+            <div id="docTipoFreteInfo" style="font-size:10.5px;color:#6b7280;margin-top:2px"></div>
+          </div>
+        </div>
+        <div id="boxAliquotas" style="display:none;margin-bottom:10px;padding:8px 12px;background:#f0fdf4;border-radius:6px;border-left:3px solid #0e9f6e;font-size:11px">
+          <span style="color:#065f46;font-weight:700">Alíquotas da operação:</span>
+          <span id="docAliquotas" style="color:#374151"></span>
+        </div>
+        <div style="margin-bottom:12px;padding:8px 12px;background:#fff3cd;border-radius:6px;border-left:3px solid #e3a008;font-size:11.5px">
+          <span style="color:#6b7280;font-weight:700">IPI: </span>
+          <span style="color:#374151">Documento emitido por EPP/ME optante pelo Simples Nacional LC 123/2006, não gera direito a crédito fiscal de IPI.</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="doc-section" id="secSimuladorDoc" style="display:none">
+      <div class="sec-titulo">💰 Condições de Pagamento — Simulação</div>
+      <div id="secSimuladorPixDoc" style="display:none;margin-bottom:14px"><div id="simPixBloco"></div></div>
+      <div id="secSimuladorCartaoDoc" style="display:none;margin-bottom:16px">
+        <div class="sim-doc-header-row" style="background:#f3f4f6;border-radius:8px;border-top:2px solid #86efac;border-bottom:3px solid #F24105;padding:8px 12px;margin-bottom:8px">
+          <span class="sim-doc-checkbox"><i class="fa-solid fa-check"></i></span>
+          <i class="fa-solid fa-credit-card" style="font-size:15px;color:#3b82f6;flex-shrink:0"></i>
+          <span style="font-size:13px;font-weight:800;color:#1f2937">Cartão de Crédito — Todas as condições</span>
+          <span class="sim-doc-badge">ATÉ 11% OFF</span>
+          <span class="sim-doc-hint no-print">Clique em <strong>Destacar</strong> para marcar a condição preferida</span>
+        </div>
+        <div id="aviso_difal_cartao_doc" class="aviso-difal-doc">
+          <span>⚠️ Atenção: o valor do DIFAL de <strong id="aviso_difal_cartao_valor_doc">R$ 0,00</strong> deverá ser pago <strong>à vista</strong>, pois você é <strong>não contribuinte</strong> de ICMS — esse valor será somado ao sinal independente da parcela escolhida.</span>
+        </div>
+        <div id="simCartaoTabela"></div>
+      </div>
+      <div id="secSimuladorBoletoDoc" style="display:none;margin-bottom:16px">
+        <div class="sim-doc-header-row" style="background:#fff7ed;border-radius:8px;border-top:2px solid #86efac;border-bottom:3px solid #F24105;padding:8px 12px;margin-bottom:8px">
+          <span class="sim-doc-checkbox-boleto"><i class="fa-solid fa-check"></i></span>
+          <i class="fa-solid fa-file-lines" style="font-size:15px;color:#F24105;flex-shrink:0"></i>
+          <span style="font-size:13px;font-weight:800;color:#1f2937">Boleto — Sinal + Parcelas — Todas as condições</span>
+          <span class="sim-doc-badge-boleto">ATÉ 12% OFF</span>
+          <span class="sim-doc-hint no-print">Clique em <strong>Destacar</strong> para marcar a condição preferida</span>
+        </div>
+        <div id="simBoletoTabela"></div>
+      </div>
+      <div style="margin-top:10px;padding:8px 12px;background:#fff3cd;border-radius:6px;border-left:3px solid #e3a008;font-size:11px;color:#374151">
+        <strong>⚠️ Atenção:</strong> Valores simulados com base no total do orçamento. Consulte a MAERA para condições atualizadas.
+      </div>
+    </div>
+
+    <div class="doc-section" id="secCondPagamentoDoc" style="display:none">
+      <div class="sec-titulo">💳 Condições de Pagamento</div>
+      <div class="sec-item"><span><strong>🚚 FRETE GRÁTIS PARA TODO O BRASIL!</strong> Receba seu pedido sem pagar frete para qualquer lugar do Brasil.</span></div>
+      <div class="sec-item"><span><strong>💰 À VISTA EM ADIANTAMENTO (PIX)</strong> — PIX do valor total na conta corrente da Maera para fechamento do pedido.</span></div>
+      <div class="sec-item"><span><strong>🏦 FINANCIAMENTO SICOOB</strong> — Financiamento em até 48x, com desconto para pagamento à vista em parceria com o Banco SICOOB.</span></div>
+      <div class="sec-item"><span><strong>📄 BOLETO COM SINAL + 10 PARCELAS</strong> — Parcelas a cada 28 dias. Mediante aprovação de ficha cadastral. <em>Maior o Sinal, Maior o desconto!</em></span></div>
+      <div class="sec-item"><span><strong>💳 CARTÃO DE CRÉDITO EM ATÉ 12X SEM JUROS</strong> — Pagamento via link. <em>Menos parcelas, mais desconto!</em></span></div>
+      <div class="sec-item"><span><strong>🏛️ BNDES</strong> — Financiamento em até 48 vezes. Simulação realizada pela Maera.</span></div>
+    </div>
+
+    <div class="doc-section" id="secCalibracaoDoc" style="display:none">
+      <div class="sec-titulo">🎯 Condições — Certificado de Calibração</div>
+      <div class="sec-texto">Certificados emitidos por laboratórios parceiros:</div>
+      <div class="sec-item"><span><strong>LRM Metrologia</strong></span></div>
+      <div class="sec-item"><span><strong>Metis Metrologia</strong></span></div>
+      <div class="sec-texto" style="margin-top:8px">O certificado de calibração é rastreável à RBC. Caso necessite de certificado com acreditação RBC, consulte no momento do fechamento do pedido.</div>
+      <div class="sec-texto">A validade do certificado deverá ser informada pelo cliente no ato de fechamento do pedido.</div>
+      <div class="sec-texto">As calibrações serão executadas conforme instruções de trabalho internas da LRM Metrologia. <strong>CASO O CLIENTE DESEJE QUAISQUER DETALHES PERSONALIZADOS, COMO PONTOS DE TESTE ESPECÍFICOS, DEVE SER INFORMADO À MAERA NO PEDIDO DE COMPRAS</strong>, e no caso de equipamentos com prazo de entrega de 1 dia, este prazo passa a ser de 10 dias.</div>
+      <div class="sec-texto">O certificado será entregue com o equipamento ou poderá ser solicitado via e-mail à Maera ou à LRM Metrologia.</div>
+    </div>
+
+    <div class="doc-section" id="secSoftwareDoc" style="display:none">
+      <div class="sec-titulo">💻 Software SUNWEB</div>
+      <div class="sec-texto">Recomenda-se que o dispositivo Android esteja atualizado e em boas condições de uso para garantir melhor compatibilidade, desempenho e segurança. A Maera não se responsabiliza por limitações decorrentes de configurações de rede, como bloqueios de acesso ao site, restrições de firewall, proxy ou instabilidades de conexão, que possam impactar o funcionamento total ou parcial do sistema.</div>
+    </div>
+
+    <div class="doc-section" id="secTreinamentoDoc" style="display:none">
+      <div class="sec-titulo">🎓 Treinamento</div>
+      <div class="sec-texto"><strong>Atenção:</strong> Informamos que o treinamento operacional dos equipamentos orçados <strong>não está incluso</strong>.</div>
+      <div class="sec-texto">Caso haja interesse em um treinamento completo, indicamos um de nossos parceiros especializados, a empresa <strong>EXCELSIOR</strong>.<br></div>
+      <div class="sec-texto">Contato: felipe.reis@excelsiormetrologia.com.br (11) 97130-1709.</div>
+    </div>
+
+    <div class="doc-section" id="secDifalDoc" style="display:none">
+      <div class="sec-titulo">⚖️ Observação — DIFAL</div>
+      <div class="sec-texto">
+        💡 O ICMS Interestadual e o DIFAL são calculados automaticamente conforme o estado de destino do cliente.<br>
+        💡 Quando o cliente for Consumidor Final NÃO CONTRIBUINTE de ICMS, o imposto deverá ser recolhido pelo vendedor.<br>
+        💡 Quando o cliente for Consumidor Final CONTRIBUINTE de ICMS, o imposto deverá ser recolhido pelo próprio cliente.<br>
+        💡 Os valores de DIFAL apresentados são aproximados e podem variar conforme regras fiscais, enquadramento tributário e validação da SEFAZ.<br>
+      </div>
+    </div>
+
+    <div class="doc-footer">
+      <div>
+        <div class="doc-footer-texto">Prezado cliente, agradecemos o interesse em nossos produtos e serviços.</div>
+        <div class="doc-footer-marca">MAERA INDÚSTRIA DE TECNOLOGIA LTDA — maera@maera.com.br</div>
+      </div>
+      <div class="doc-footer-pagina" id="docFooterData"></div>
+    </div>
+
+  </div><!-- /documento -->
+
+  <div class="btn-fixo-container no-print" style="position:fixed;bottom:28px;right:28px;z-index:999">
+    <button class="btn-pdf-fixo" onclick="gerarPDF()">
+      <i class="fa-solid fa-file-pdf" style="font-size:18px"></i> Gerar PDF
+    </button>
+  </div>
+
+</main>
+</div>
+
+<script src="assets/app.js?v=perfis-admin-vendedor-20260528"></script>
+<script src="assets/fiscal.js?v=usd-internacional-20260521"></script>
+<script src="assets/visualizar.js?v=pix-desconto-indicadores-20260529"></script>
+
+<script>
+/* ══════════════════════════════════════════
+   AVISO DIFAL — CARTÃO (visualizar.html)
+══════════════════════════════════════════ */
+function _atualizarAvisoDifalDoc() {
+  const aviso = document.getElementById('aviso_difal_cartao_doc');
+  const valor = document.getElementById('aviso_difal_cartao_valor_doc');
+
+  const textoContrib = document.getElementById('dContribuinte')
+    ?.textContent?.toLowerCase() || '';
+
+  const ehNaoContrib =
+    window._orcContribuinte === 'nao' ||
+    textoContrib.includes('não') ||
+    textoContrib.includes('nao');
+
+  const ehContrib =
+    window._orcContribuinte === 'sim' ||
+    textoContrib.includes('sim');
+
+  const estadoTxt = document.getElementById('dEstado')?.textContent || '';
+  const ehMG = typeof isEstadoMinasGerais === 'function'
+    ? isEstadoMinasGerais(estadoTxt)
+    : String(estadoTxt || '').trim().toUpperCase() === 'MG';
+
+  const difalVal = ehMG ? 0 : (window._orcDifalVal || window.difalVal || 0);
+  const total    = window._orcTotal || 0;
+
+  if (aviso) {
+    const mostrar = ehNaoContrib && difalVal > 0 && total > 0;
+    aviso.style.display = mostrar ? 'block' : 'none';
+    if (valor && mostrar) {
+      valor.textContent = typeof formatMoeda === 'function'
+        ? formatMoeda(difalVal)
+        : `R$ ${difalVal.toFixed(2).replace('.', ',')}`;
+    }
+  }
+
+  /* ══════════════════════════════════════════
+     LINHA DIFAL — reposicionamento dinâmico
+  ══════════════════════════════════════════ */
+  const difalRow      = document.getElementById('docDifalRow');
+  const difalTotal    = document.getElementById('docDifalTotal');
+  const difalBadge    = document.getElementById('docDifalBadge');
+  const totaisBox     = document.getElementById('docTotaisBox');
+  const totaisWrapper = document.getElementById('docTotaisWrapper');
+  const totalFinalRow = document.getElementById('docTotalFinalRow');
+
+  if (!difalRow || !totaisBox || !totaisWrapper || !totalFinalRow) return;
+
+  const fmt = typeof formatMoeda === 'function'
+    ? formatMoeda(difalVal)
+    : `R$ ${difalVal.toFixed(2).replace('.', ',')}`;
+
+  if (difalVal > 0 && ehNaoContrib) {
+    /* ── Vendedor recolhe: DENTRO da caixa ── */
+    totaisBox.insertBefore(difalRow, totalFinalRow);
+
+    difalRow.style.display      = 'flex';
+    difalRow.style.borderTop    = '1px solid #f3f4f6';
+    difalRow.style.marginTop    = '0';
+    difalRow.style.padding      = '8px 14px';
+    difalRow.style.width        = '';
+    difalRow.style.minWidth     = '';
+    difalRow.style.whiteSpace   = 'nowrap';
+
+    if (difalTotal) { difalTotal.textContent = '+ ' + fmt; difalTotal.style.color = '#c2410c'; }
+    if (difalBadge) { difalBadge.textContent = 'Recolhimento do Vendedor'; difalBadge.style.background = '#fee2e2'; difalBadge.style.color = '#991b1b'; }
+
+  } else if (difalVal > 0 && ehContrib) {
+    /* ── Cliente recolhe: FORA da caixa ── */
+    totaisWrapper.insertBefore(difalRow, totaisBox.nextSibling);
+
+    /* Configura a linha DIFAL com nowrap para medir sua largura natural */
+    difalRow.style.display      = 'flex';
+    difalRow.style.whiteSpace   = 'nowrap';
+    difalRow.style.width        = 'fit-content';
+    difalRow.style.minWidth     = '280px';
+    difalRow.style.maxWidth     = '100%';
+    difalRow.style.padding      = '8px 14px';
+    difalRow.style.borderTop    = '1px dashed #e5e7eb';
+    difalRow.style.marginTop    = '6px';
+    difalRow.style.boxSizing    = 'border-box';
+
+    if (difalTotal) { difalTotal.textContent = fmt; difalTotal.style.color = '#6b7280'; }
+    if (difalBadge) { difalBadge.textContent = 'Recolhimento do cliente (Não incluso no total)'; difalBadge.style.background = '#f3f4f6'; difalBadge.style.color = '#6b7280'; }
+
+    /*
+     * ✅ CORREÇÃO PRINCIPAL:
+     * Após renderizar a linha DIFAL com nowrap, medimos sua largura real
+     * e aplicamos na CAIXA DE TOTAIS (que se alarga para combinar).
+     * Assim a caixa nunca fica menor que o texto da linha DIFAL.
+     */
+    requestAnimationFrame(() => {
+      const difalW = difalRow.offsetWidth;
+      const boxW   = totaisBox.offsetWidth;
+      if (difalW > boxW) {
+        totaisBox.style.width    = difalW + 'px';
+        totaisBox.style.minWidth = difalW + 'px';
+      }
+    });
+
+  } else {
+    totaisWrapper.insertBefore(difalRow, totaisBox.nextSibling);
+    difalRow.style.display = 'none';
+  }
+}
+
+/* ══════════════════════════════════════════
+   INICIALIZAÇÃO
+══════════════════════════════════════════ */
+document.addEventListener('DOMContentLoaded', () => {
+  const elData = document.getElementById('docFooterData');
+  if (elData) {
+    const now = new Date();
+    elData.textContent =
+      `Gerado em ${now.toLocaleDateString('pt-BR')} às ` +
+      `${now.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' })}`;
+  }
+
+  requestAnimationFrame(() => {
+    _atualizarAvisoDifalDoc();
+  });
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Logins de Vendedores - MAERA</title>
+  <link rel="stylesheet" href="assets/style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <style>
+    .vendedor-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 14px;
+      border-radius: 8px;
+      border: 1px solid #e5e7eb;
+      margin-bottom: 8px;
+      background: #fff;
+    }
+    .vendedor-nome { font-size: 14px; font-weight: 700; color: #111827; }
+    .vendedor-login { font-size: 11px; color: #6b7280; font-weight: 600; margin-top: 2px; }
+    .master-badge {
+      margin-left: 8px;
+      background: #111827;
+      color: #fff;
+      border-radius: 10px;
+      padding: 1px 7px;
+      font-size: 10px;
+      font-weight: 800;
+    }
+    .btn-excluir {
+      background: #fff;
+      color: #f24105;
+      border: 1.5px solid #f24105;
+      border-radius: 7px;
+      padding: 5px 12px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 700;
+      font-family: 'Inter', sans-serif;
+    }
+    .btn-excluir:hover { background: #f24105; color: #fff; }
+    .btn-excluir:disabled { opacity: .45; cursor: not-allowed; }
+    .btn-editar {
+      background: #fff;
+      color: #374151;
+      border: 1.5px solid #d1d5db;
+      border-radius: 7px;
+      padding: 5px 12px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 700;
+      font-family: 'Inter', sans-serif;
+    }
+    .btn-editar:hover { background: #f3f4f6; }
+    .perfil-badge {
+      margin-left: 8px;
+      background: #eef2ff;
+      color: #3730a3;
+      border-radius: 10px;
+      padding: 1px 7px;
+      font-size: 10px;
+      font-weight: 800;
+    }
+    .empty-state { text-align: center; padding: 32px; color: #9ca3af; font-size: 13px; }
+    .status-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 12.5px;
+      font-weight: 700;
+      margin-bottom: 16px;
+    }
+    .status-ok { background:#f0fdf4; color:#065f46; border:1px solid #0e9f6e; }
+    .status-erro { background:#fef2f2; color:#991b1b; border:1px solid #f24105; }
+    .status-loading { background:#eff6ff; color:#1e3a5f; border:1px solid #3b82f6; }
+  </style>
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <img src="assets/logo.png" alt="MAERA" style="height:38px;width:auto;max-width:160px;object-fit:contain"/>
+    </div>
+    <nav class="sidebar-nav">
+      <a href="index.html" class="nav-item"><i class="fa-solid fa-house"></i> Orcamento</a>
+      <a href="novo.html" class="nav-item"><i class="fa-solid fa-plus"></i> Novo Orcamento</a>
+      <a href="vendedores.html" class="nav-item active"><i class="fa-solid fa-user"></i> Vendedores</a>
+    </nav>
+  </aside>
+
+  <main class="main-content">
+    <header class="top-bar">
+      <h1 class="page-title"><i class="fa-solid fa-users-gear"></i> Logins de Vendedores</h1>
+      <button class="btn btn-outline" onclick="sairDoSistema()" style="margin-left:auto;font-size:12px">
+        <i class="fa-solid fa-right-from-bracket"></i> Sair
+      </button>
+    </header>
+
+    <div id="statusBar" class="status-bar status-loading">
+      <i class="fa-solid fa-circle-notch fa-spin"></i>
+      Conectando ao servidor...
+    </div>
+
+    <div class="card">
+      <h3 style="margin-bottom:12px;font-size:15px;color:#111827">
+        <i class="fa-solid fa-user-plus" style="color:#f24105;margin-right:6px"></i>
+        Adicionar Login
+      </h3>
+
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <input type="text" id="nomeInput" placeholder="Nome do vendedor" class="input-search" style="flex:1;min-width:200px" onkeydown="if(event.key==='Enter') salvar()"/>
+        <input type="text" id="loginInput" placeholder="Login" class="input-search" style="flex:1;min-width:160px" onkeydown="if(event.key==='Enter') salvar()"/>
+        <input type="password" id="senhaInput" placeholder="Senha" class="input-search" style="flex:1;min-width:160px" onkeydown="if(event.key==='Enter') salvar()"/>
+        <select id="perfilInput" class="input-select" style="flex:0 0 150px;min-width:150px">
+          <option value="vendedor">Vendedor</option>
+          <option value="admin">Admin</option>
+        </select>
+        <button class="btn btn-primary" onclick="salvar()" id="btnSalvar">
+          <i class="fa-solid fa-plus"></i> Adicionar
+        </button>
+        <button class="btn btn-outline" onclick="cancelarEdicao()" id="btnCancelarEdicao" style="display:none">
+          Cancelar
+        </button>
+      </div>
+
+      <hr style="margin:20px 0;border:none;border-top:1px solid #e5e7eb"/>
+
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <h3 style="font-size:15px;color:#111827;margin:0">
+          <i class="fa-solid fa-users" style="color:#f24105;margin-right:6px"></i>
+          Logins Cadastrados
+          <span id="totalBadge" style="background:#f3f4f6;color:#6b7280;font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;margin-left:6px">0</span>
+        </h3>
+        <button class="btn btn-outline" onclick="carregar()" style="font-size:12px">
+          <i class="fa-solid fa-rotate-right"></i> Atualizar
+        </button>
+      </div>
+
+      <div id="listaVendedores"></div>
+    </div>
+  </main>
+</div>
+
+<script>
+function getApiRoot() {
+  return `${window.location.origin}/api`;
+}
+
+const API_VEND = `${getApiRoot()}/vendedores`;
+let editandoLogin = null;
+
+async function sairDoSistema() {
+  try {
+    await fetch(`${getApiRoot()}/logout`, { method: 'POST', credentials: 'include' });
+  } catch {}
+  localStorage.removeItem('maera_token');
+  localStorage.removeItem('maera_usuario');
+  window.location.href = 'login.html?trocar=1';
+}
+
+function authHeaders(extra = {}) {
+  const token = localStorage.getItem('maera_token');
+  return token ? { ...extra, Authorization: `Bearer ${token}` } : extra;
+}
+
+function usuarioEhAdmin(usuario) {
+  return !!(usuario && (usuario.master || usuario.perfil === 'admin'));
+}
+
+async function exigirAdminTela() {
+  try {
+    const resp = await fetch(`${getApiRoot()}/session`, {
+      credentials: 'include',
+      headers: authHeaders()
+    });
+    const data = await resp.json();
+    if (!usuarioEhAdmin(data.usuario)) {
+      window.location.href = 'index.html';
+      return false;
+    }
+    return true;
+  } catch {
+    window.location.href = 'login.html';
+    return false;
+  }
+}
+
+function setStatus(tipo, msg) {
+  const bar = document.getElementById('statusBar');
+  const icones = { ok: 'fa-circle-check', erro: 'fa-circle-xmark', loading: 'fa-circle-notch fa-spin' };
+  bar.className = `status-bar status-${tipo}`;
+  bar.innerHTML = `<i class="fa-solid ${icones[tipo]}"></i> ${msg}`;
+}
+
+async function carregar() {
+  setStatus('loading', 'Carregando logins...');
+  const container = document.getElementById('listaVendedores');
+  container.innerHTML = '<div class="empty-state"><i class="fa-solid fa-circle-notch fa-spin"></i><br>Carregando...</div>';
+
+  try {
+    const resp = await fetch(API_VEND, { credentials: 'include', headers: authHeaders() });
+    if (resp.status === 401) {
+      localStorage.removeItem('maera_token');
+      localStorage.removeItem('maera_usuario');
+      window.location.href = 'login.html';
+      return;
+    }
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const lista = (await resp.json())
+      .map(normalizarVendedorTela)
+      .filter(vendedor => vendedor.login !== 'master');
+    document.getElementById('totalBadge').textContent = lista.length;
+
+    if (!lista.length) {
+      container.innerHTML = '<div class="empty-state">Nenhum login cadastrado.</div>';
+      setStatus('ok', `Servidor conectado - ${window.location.host}`);
+      return;
+    }
+
+    container.innerHTML = lista.map(usuario => {
+      return `
+      <div class="vendedor-item">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="width:34px;height:34px;border-radius:50%;background:#f24105;color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;flex-shrink:0">
+            ${escapeHtml(usuario.nome || '?').charAt(0).toUpperCase()}
+          </div>
+          <div>
+            <div class="vendedor-nome">
+              ${escapeHtml(usuario.nome || '')}
+              ${usuario.master ? '<span class="perfil-badge">ADMIN</span>' : '<span class="perfil-badge">VENDEDOR</span>'}
+            </div>
+            <div class="vendedor-login">Login: ${escapeHtml(usuario.login || '')}</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="btn-editar" onclick="editar('${escapeAttr(usuario.nome || '')}', '${escapeAttr(usuario.login || '')}', '${usuario.master ? 'admin' : 'vendedor'}')">
+            <i class="fa-solid fa-pen"></i> Editar
+          </button>
+          <button class="btn-excluir" ${usuario.master ? 'disabled' : ''} onclick="excluir('${escapeAttr(usuario.login || '')}')">
+            <i class="fa-solid fa-trash"></i> Excluir
+          </button>
+        </div>
+      </div>
+    `;
+    }).join('');
+
+    setStatus('ok', `${lista.length} login(s) - servidor: ${window.location.host}`);
+  } catch (err) {
+    console.error('Erro ao carregar vendedores:', err);
+    container.innerHTML = '<div class="empty-state" style="color:#f24105">Nao foi possivel carregar os logins.</div>';
+    setStatus('erro', 'Sem conexao ou sem permissao.');
+  }
+}
+
+async function salvar() {
+  const nomeInput = document.getElementById('nomeInput');
+  const loginInput = document.getElementById('loginInput');
+  const senhaInput = document.getElementById('senhaInput');
+  const perfilInput = document.getElementById('perfilInput');
+  const btn = document.getElementById('btnSalvar');
+  const nome = nomeInput.value.trim();
+  const login = loginInput.value.trim();
+  const senha = senhaInput.value.trim();
+  const perfil = perfilInput.value;
+
+  [nomeInput, loginInput, senhaInput].forEach(el => el.style.borderColor = '');
+  if (!nome || !login || (!editandoLogin && !senha)) {
+    if (!nome) nomeInput.style.borderColor = '#f24105';
+    if (!login) loginInput.style.borderColor = '#f24105';
+    if (!editandoLogin && !senha) senhaInput.style.borderColor = '#f24105';
+    setStatus('erro', editandoLogin ? 'Preencha nome e login.' : 'Preencha nome, login e senha.');
+    return;
+  }
+
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Salvando...';
+
+  try {
+    const body = { nome, login, perfil, master: perfil === 'admin' };
+    if (senha) body.senha = senha;
+
+    const resp = await fetch(editandoLogin ? `${API_VEND}/${encodeURIComponent(editandoLogin)}` : API_VEND, {
+      method: editandoLogin ? 'PUT' : 'POST',
+      headers: authHeaders({ 'Content-Type': 'application/json' }),
+      credentials: 'include',
+      body: JSON.stringify(body)
+    });
+
+    if (resp.status === 403) throw new Error('Apenas Admin pode cadastrar ou editar logins.');
+    if (!resp.ok) throw new Error(`Erro ${resp.status}`);
+
+    limparFormulario();
+    await carregar();
+  } catch (err) {
+    console.error('Erro ao salvar vendedor:', err);
+    setStatus('erro', err.message || 'Erro ao salvar.');
+  } finally {
+    btn.disabled = false;
+    atualizarModoFormulario();
+  }
+}
+
+function editar(nome, login, perfil) {
+  editandoLogin = login;
+  document.getElementById('nomeInput').value = nome;
+  document.getElementById('loginInput').value = login;
+  document.getElementById('senhaInput').value = '';
+  document.getElementById('senhaInput').placeholder = 'Nova senha (opcional)';
+  document.getElementById('perfilInput').value = perfil || 'vendedor';
+  atualizarModoFormulario();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function cancelarEdicao() {
+  limparFormulario();
+  atualizarModoFormulario();
+}
+
+function limparFormulario() {
+  editandoLogin = null;
+  document.getElementById('nomeInput').value = '';
+  document.getElementById('loginInput').value = '';
+  document.getElementById('senhaInput').value = '';
+  document.getElementById('senhaInput').placeholder = 'Senha';
+  document.getElementById('perfilInput').value = 'vendedor';
+}
+
+function atualizarModoFormulario() {
+  const btn = document.getElementById('btnSalvar');
+  const cancelar = document.getElementById('btnCancelarEdicao');
+  btn.innerHTML = editandoLogin
+    ? '<i class="fa-solid fa-floppy-disk"></i> Salvar edição'
+    : '<i class="fa-solid fa-plus"></i> Adicionar';
+  cancelar.style.display = editandoLogin ? '' : 'none';
+}
+
+async function excluir(login) {
+  if (!login || !confirm(`Excluir o login "${login}"?`)) return;
+  try {
+    const resp = await fetch(`${API_VEND}/${encodeURIComponent(login)}`, {
+      method: 'DELETE',
+      credentials: 'include',
+      headers: authHeaders()
+    });
+    if (resp.status === 403) throw new Error('Apenas Admin pode excluir logins.');
+    if (!resp.ok) throw new Error(`Erro ${resp.status}`);
+    await carregar();
+  } catch (err) {
+    console.error('Erro ao excluir:', err);
+    setStatus('erro', err.message || 'Erro ao excluir.');
+  }
+}
+
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function normalizarVendedorTela(vendedor) {
+  if (typeof vendedor === 'string') {
+    return {
+      nome: vendedor,
+      login: slugLoginTela(vendedor),
+      master: false,
+      perfil: 'vendedor'
+    };
+  }
+  const nome = vendedor?.nome || '';
+  const perfil = vendedor?.perfil || (vendedor?.master ? 'admin' : 'vendedor');
+  return {
+    nome,
+    login: vendedor?.login || slugLoginTela(nome),
+    master: perfil === 'admin' || !!vendedor?.master,
+    perfil
+  };
+}
+
+function slugLoginTela(valor) {
+  return String(valor || '')
+    .trim()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '.')
+    .replace(/^\.+|\.+$/g, '') || 'usuario';
+}
+
+function escapeAttr(str) {
+  return String(str).replace(/'/g, "\\'");
+}
+
+exigirAdminTela().then(ok => {
+  if (ok) carregar();
+});
+</script>
+</body>
+</html>
