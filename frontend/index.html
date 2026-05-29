@@ -663,6 +663,15 @@ function buildStatusOptions(statusAtual) {
   }).join('');
 }
 
+function popularFiltroStatus() {
+  const filtro = document.getElementById('filterStatus');
+  if (!filtro) return;
+  const valorAtual = filtro.value;
+  filtro.innerHTML = '<option value="">Todos os status</option>' +
+    buildStatusOptions(valorAtual);
+  filtro.value = valorAtual;
+}
+
 /* Monta o wrapper com select + tooltip */
 function buildStatusCell(id, statusAtual, extraStyle = '') {
   const st = STATUS_MAP[statusAtual] || STATUS_MAP.novo;
@@ -709,6 +718,7 @@ function buildFollowUpAlert(orcamento) {
 /* ═══════════════════════════════════════════════ */
 
 document.addEventListener('DOMContentLoaded', () => {
+  popularFiltroStatus();
   renderTabela();
   document.getElementById('searchInput')
     .addEventListener('input', debounce(renderTabela));
