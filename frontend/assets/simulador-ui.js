@@ -324,7 +324,7 @@ function _descricaoCondicaoPersonalizada(Condição, totalBase) {
     ? `Desconto ${formatPercentualSim(c.ajusteValor)}`
     : c.ajusteTipo === 'juros' && c.ajusteValor > 0
       ? `Juros ${formatPercentualSim(c.ajusteValor)}`
-      : 'Sem juros/desconto';
+      : '-';
   return {
     forma,
     principal: `${forma} - ${entradaTxt}${c.parcelas}x de ${formatMoeda(c.valorParcela)}`,

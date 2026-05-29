@@ -1029,7 +1029,7 @@ function renderCondiçõesPersonalizadasDoc(totalBase, Condições) {
       ? `Desconto ${c.ajusteValor}%`
       : c.ajusteTipo === 'juros' && c.ajusteValor > 0
         ? `Juros ${c.ajusteValor}%`
-        : 'Sem juros/desconto';
+        : '-';
     return `
       <tr>
         <td style="padding:8px 10px;font-weight:800;color:#374151">${forma}</td>

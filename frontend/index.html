@@ -167,14 +167,74 @@
   ══════════════════════════════════════ */
   .status-wrap {
     position: relative;
-    display: inline-block;
+    display: inline-flex;
+    justify-content: center;
   }
 
   .status-select {
+    min-width: 244px;
     padding: 4px 10px; border-radius: 20px; font-size: 11.5px;
     font-weight: 700; text-transform: uppercase; letter-spacing: .4px;
     border: none; appearance: none; cursor: pointer;
-    outline: none; text-align: center;
+    outline: none; text-align: center; text-align-last: center;
+  }
+
+  #tabelaOrcamentos .date-cell {
+    width: 92px;
+    min-width: 92px;
+    white-space: nowrap;
+    word-break: normal;
+    overflow-wrap: normal;
+    text-align: center;
+  }
+
+  #tabelaOrcamentos .doc-cell {
+    width: 142px;
+    min-width: 142px;
+    white-space: nowrap;
+    word-break: normal;
+    overflow-wrap: normal;
+    text-align: center;
+  }
+
+  #tabelaOrcamentos .numero-cell {
+    width: 118px;
+    min-width: 118px;
+    white-space: nowrap;
+    word-break: normal;
+    overflow-wrap: normal;
+    text-align: center;
+  }
+
+  .card-tabela {
+    overflow-x: auto;
+  }
+
+  #tabelaOrcamentos {
+    min-width: 1280px;
+  }
+
+  #tabelaOrcamentos .status-cell {
+    width: 280px;
+    min-width: 280px;
+    text-align: center;
+    word-break: normal;
+  }
+
+  #tabelaOrcamentos th:nth-child(7),
+  #tabelaOrcamentos td:nth-child(7) {
+    text-align: center;
+  }
+
+  #tabelaOrcamentos .status-cell-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  #tabelaOrcamentos .acoes {
+    justify-content: center;
+    white-space: nowrap;
   }
 
   /* Tooltip */
@@ -1037,13 +1097,15 @@ async function renderTabela() {
       const followUpAlert = buildFollowUpAlert(o);
       tbody.innerHTML += `
         <tr>
-          <td><strong>${o.numero || '—'}</strong></td>
+          <td class="numero-cell"><strong>${o.numero || '—'}</strong></td>
           <td>${o.razaoSocial || '—'}</td>
-          <td>${o.cnpj        || '—'}</td>
+          <td class="doc-cell">${o.cnpj        || '—'}</td>
           <td>${o.vendedor    || '—'}</td>
-          <td>${formatDateBR(o.emissao)}</td>
-          <td>${formatDateBR(o.validoAte)}</td>
-          <td>${buildStatusCell(o.id, o.status)}${followUpAlert}</td>
+          <td class="date-cell">${formatDateBR(o.emissao)}</td>
+          <td class="date-cell">${formatDateBR(o.validoAte)}</td>
+          <td class="status-cell">
+            <div class="status-cell-inner">${buildStatusCell(o.id, o.status)}${followUpAlert}</div>
+          </td>
           <td class="acoes">
             <a href="visualizar.html?id=${o.id}" class="btn-icon" title="Visualizar"><i class="fa-solid fa-eye"></i></a>
             <a href="novo.html?id=${o.id}" class="btn-icon" title="Editar"><i class="fa-solid fa-pen"></i></a>
@@ -1075,7 +1137,7 @@ async function renderTabela() {
     card.innerHTML = `
       <div class="orc-card-top">
         <span class="orc-numero"># ${o.numero || '—'}</span>
-        <div>${buildStatusCell(o.id, o.status, 'padding:3px 8px;font-size:11px;')}${followUpAlert}</div>
+        <div>${buildStatusCell(o.id, o.status, 'min-width:auto;max-width:150px;padding:3px 8px;font-size:11px;')}${followUpAlert}</div>
       </div>
       <div class="orc-cliente">${o.razaoSocial || '—'}</div>
       <div class="orc-info-grid">

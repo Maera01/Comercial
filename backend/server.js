@@ -58,6 +58,7 @@ const MASTER_LOGIN = process.env.MAERA_MASTER_LOGIN || 'master';
 const AUTH_SECRET = process.env.MAERA_AUTH_SECRET || 'troque-este-segredo-no-render';
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 const DATABASE_URL = MODO_LOCAL ? '' : (process.env.DATABASE_URL || '');
+const DB_SCHEMA = process.env.MAERA_DB_SCHEMA || 'orcamentos';
 const pool = DATABASE_URL
   ? new Pool({
       connectionString: DATABASE_URL,
@@ -66,6 +67,17 @@ const pool = DATABASE_URL
         : undefined
     })
   : null;
+
+function quoteIdent(valor) {
+  if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(valor)) {
+    throw new Error(`Identificador SQL invalido: ${valor}`);
+  }
+  return `"${valor}"`;
+}
+
+const SCHEMA_SQL = quoteIdent(DB_SCHEMA);
+const VENDEDORES_TABLE = `${SCHEMA_SQL}."vendedores"`;
+const ORCAMENTOS_TABLE = `${SCHEMA_SQL}."orcamentos"`;
 
 function readJson(filePath, fallback) {
   try {
@@ -100,18 +112,20 @@ async function iniciarBanco() {
     return;
   }
 
+  await query(`CREATE SCHEMA IF NOT EXISTS ${SCHEMA_SQL}`);
+
   await query(`
-    CREATE TABLE IF NOT EXISTS vendedores (
+    CREATE TABLE IF NOT EXISTS ${VENDEDORES_TABLE} (
       nome TEXT PRIMARY KEY,
       criado_em TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )
   `);
 
   await query(`
-    CREATE TABLE IF NOT EXISTS orcamentos (
+    CREATE TABLE IF NOT EXISTS ${ORCAMENTOS_TABLE} (
       id TEXT PRIMARY KEY,
       numero TEXT UNIQUE,
-      data JSONB NOT NULL,
+      dados JSONB NOT NULL,
       criado_em TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       atualizado_em TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )
@@ -119,26 +133,72 @@ async function iniciarBanco() {
 
   await query(`
     CREATE INDEX IF NOT EXISTS idx_orcamentos_atualizado_em
-    ON orcamentos (atualizado_em DESC)
+    ON ${ORCAMENTOS_TABLE} (atualizado_em DESC)
   `);
 
+  await migrarTabelasPublic();
   await importarJsonInicial();
-  console.log('Banco PostgreSQL conectado.');
+  console.log(`Banco PostgreSQL conectado no schema "${DB_SCHEMA}".`);
+}
+
+async function tabelaExiste(nomeCompleto) {
+  const resultado = await query('SELECT to_regclass($1) IS NOT NULL AS existe', [nomeCompleto]);
+  return !!resultado.rows[0]?.existe;
+}
+
+async function colunaExiste(schema, tabela, coluna) {
+  const resultado = await query(
+    `
+      SELECT 1
+      FROM information_schema.columns
+      WHERE table_schema = $1
+        AND table_name = $2
+        AND column_name = $3
+      LIMIT 1
+    `,
+    [schema, tabela, coluna]
+  );
+  return resultado.rowCount > 0;
+}
+
+async function migrarTabelasPublic() {
+  if (DB_SCHEMA === 'public') return;
+
+  const vendedoresCount = await query(`SELECT COUNT(*)::int AS total FROM ${VENDEDORES_TABLE}`);
+  if (vendedoresCount.rows[0].total === 0 && await tabelaExiste('public.vendedores')) {
+    await query(`
+      INSERT INTO ${VENDEDORES_TABLE} (nome, criado_em)
+      SELECT nome, COALESCE(criado_em, NOW())
+      FROM public.vendedores
+      ON CONFLICT (nome) DO NOTHING
+    `);
+  }
+
+  const orcamentosCount = await query(`SELECT COUNT(*)::int AS total FROM ${ORCAMENTOS_TABLE}`);
+  if (orcamentosCount.rows[0].total === 0 && await tabelaExiste('public.orcamentos')) {
+    const colunaJson = await colunaExiste('public', 'orcamentos', 'dados') ? 'dados' : 'data';
+    await query(`
+      INSERT INTO ${ORCAMENTOS_TABLE} (id, numero, dados, criado_em, atualizado_em)
+      SELECT id, numero, ${colunaJson}, COALESCE(criado_em, NOW()), COALESCE(atualizado_em, NOW())
+      FROM public.orcamentos
+      ON CONFLICT (id) DO NOTHING
+    `);
+  }
 }
 
 async function importarJsonInicial() {
-  const vendedoresCount = await query('SELECT COUNT(*)::int AS total FROM vendedores');
+  const vendedoresCount = await query(`SELECT COUNT(*)::int AS total FROM ${VENDEDORES_TABLE}`);
   if (vendedoresCount.rows[0].total === 0) {
     const vendedores = normalizarListaVendedores(readJson(VENDEDORES_PATH, []));
     for (const nome of vendedores) {
       await query(
-        'INSERT INTO vendedores (nome) VALUES ($1) ON CONFLICT (nome) DO NOTHING',
+        `INSERT INTO ${VENDEDORES_TABLE} (nome) VALUES ($1) ON CONFLICT (nome) DO NOTHING`,
         [nome]
       );
     }
   }
 
-  const orcamentosCount = await query('SELECT COUNT(*)::int AS total FROM orcamentos');
+  const orcamentosCount = await query(`SELECT COUNT(*)::int AS total FROM ${ORCAMENTOS_TABLE}`);
   if (orcamentosCount.rows[0].total === 0) {
     const orcamentos = readJson(ORCAMENTOS_PATH, []);
     for (const orcamento of orcamentos) {
@@ -151,7 +211,7 @@ async function importarJsonInicial() {
 async function listarVendedores() {
   const vendedoresArquivo = normalizarListaVendedores(readJson(VENDEDORES_PATH, []));
   if (!pool || vendedoresArquivo.length) return vendedoresArquivo;
-  const resultado = await query('SELECT nome FROM vendedores ORDER BY nome ASC');
+  const resultado = await query(`SELECT nome FROM ${VENDEDORES_TABLE} ORDER BY nome ASC`);
   return normalizarListaVendedores(resultado.rows.map(row => row.nome));
 }
 
@@ -169,7 +229,7 @@ async function criarVendedor(dados) {
   if (!pool) return sanitizarUsuario(usuario);
 
   await query(
-    'INSERT INTO vendedores (nome) VALUES ($1) ON CONFLICT (nome) DO NOTHING',
+    `INSERT INTO ${VENDEDORES_TABLE} (nome) VALUES ($1) ON CONFLICT (nome) DO NOTHING`,
     [usuario.nome]
   );
   return sanitizarUsuario(usuario);
@@ -211,15 +271,15 @@ async function excluirVendedor(login) {
 
   const usuario = (await listarVendedores()).find(item => item.login === login);
   if (!usuario || usuario.master) return false;
-  const resultado = await query('DELETE FROM vendedores WHERE nome = $1', [usuario.nome]);
+  const resultado = await query(`DELETE FROM ${VENDEDORES_TABLE} WHERE nome = $1`, [usuario.nome]);
   return resultado.rowCount > 0;
 }
 
 async function listarOrcamentos() {
   if (!pool) return readJson(ORCAMENTOS_PATH, []);
   const resultado = await query(`
-    SELECT data
-    FROM orcamentos
+    SELECT dados AS data
+    FROM ${ORCAMENTOS_TABLE}
     ORDER BY criado_em ASC, id ASC
   `);
   return resultado.rows.map(row => row.data);
@@ -230,7 +290,7 @@ async function buscarOrcamento(id) {
     return readJson(ORCAMENTOS_PATH, []).find(item => item.id === id);
   }
 
-  const resultado = await query('SELECT data FROM orcamentos WHERE id = $1', [id]);
+  const resultado = await query(`SELECT dados AS data FROM ${ORCAMENTOS_TABLE} WHERE id = $1`, [id]);
   return resultado.rows[0]?.data;
 }
 
@@ -245,7 +305,7 @@ async function numeroOrcamentoEmUso(id, numero) {
   }
 
   const resultado = await query(
-    'SELECT 1 FROM orcamentos WHERE numero = $1 AND id <> $2 LIMIT 1',
+    `SELECT 1 FROM ${ORCAMENTOS_TABLE} WHERE numero = $1 AND id <> $2 LIMIT 1`,
     [numero, id]
   );
   return resultado.rowCount > 0;
@@ -256,12 +316,12 @@ async function salvarOrcamentoSql(orcamento) {
   const atualizadoEm = orcamento.atualizadoEm || new Date().toISOString();
   await query(
     `
-      INSERT INTO orcamentos (id, numero, data, criado_em, atualizado_em)
+      INSERT INTO ${ORCAMENTOS_TABLE} (id, numero, dados, criado_em, atualizado_em)
       VALUES ($1, $2, $3::jsonb, $4, $5)
       ON CONFLICT (id)
       DO UPDATE SET
         numero = EXCLUDED.numero,
-        data = EXCLUDED.data,
+        dados = EXCLUDED.dados,
         atualizado_em = EXCLUDED.atualizado_em
     `,
     [
@@ -337,7 +397,7 @@ async function excluirOrcamento(id) {
     return orcamentos.length !== atualizados.length;
   }
 
-  const resultado = await query('DELETE FROM orcamentos WHERE id = $1', [id]);
+  const resultado = await query(`DELETE FROM ${ORCAMENTOS_TABLE} WHERE id = $1`, [id]);
   return resultado.rowCount > 0;
 }
 
