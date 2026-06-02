@@ -7,7 +7,10 @@ const path = require('path');
 const { Pool } = require('pg');
 
 const app = express();
-const MODO_LOCAL = process.env.MAERA_MODO_LOCAL !== 'false';
+const DATABASE_URL_ENV = process.env.DATABASE_URL || '';
+const MODO_LOCAL = process.env.MAERA_MODO_LOCAL
+  ? process.env.MAERA_MODO_LOCAL !== 'false'
+  : !DATABASE_URL_ENV;
 const PORT = process.env.PORT || (MODO_LOCAL ? 3050 : 3000);
 
 function diretorioGravavel(dir) {
@@ -57,7 +60,7 @@ const AUTH_PASSWORD = process.env.MAERA_PASSWORD || 'maera2026';
 const MASTER_LOGIN = process.env.MAERA_MASTER_LOGIN || 'master';
 const AUTH_SECRET = process.env.MAERA_AUTH_SECRET || 'troque-este-segredo-no-render';
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
-const DATABASE_URL = MODO_LOCAL ? '' : (process.env.DATABASE_URL || '');
+const DATABASE_URL = MODO_LOCAL ? '' : DATABASE_URL_ENV;
 const DB_SCHEMA = process.env.MAERA_DB_SCHEMA || 'orcamentos';
 const pool = DATABASE_URL
   ? new Pool({
@@ -736,6 +739,14 @@ app.use(express.urlencoded({ extended: true }));
 
 app.get('/teste', (req, res) => {
   res.send('<h1>Rota teste OK</h1>');
+});
+
+app.get('/api/status', (req, res) => {
+  res.json({
+    ok: true,
+    modo: pool ? 'postgres' : 'json',
+    schema: pool ? DB_SCHEMA : null
+  });
 });
 
 app.post('/api/login', async (req, res) => {
