@@ -2,35 +2,35 @@
   {
     "nome": "Administrador",
     "login": "master",
-    "senha": "maera2026",
+    "senha": "scrypt$3aeaf1260186f1f1a797687d5dd4df63$df4856b59b77d4600919750d77f271ee74bd7289806c9aaf5fe177555874a059298a2d5fe5aa8217dca7ccb4570106605822416b7ac730b165c973e4778900de",
     "master": true,
     "perfil": "admin"
   },
   {
     "nome": "Larissa",
     "login": "larissa",
-    "senha": "123",
+    "senha": "scrypt$21df8336eb6871d4ab82718ff5bc90ae$3d9b1d80f227570c8385e84a70ca078f0b5a7a46dd0746cdb51560892d7bf21cf4261b8a16449707bb86d077ba9a43056fd989aaf0e8d9717ceb763982486d0d",
     "master": true,
     "perfil": "admin"
   },
   {
     "nome": "Hanna Araujo",
     "login": "hanna",
-    "senha": "123",
+    "senha": "scrypt$58136195bbdd2560a65134d51f2935f4$8f5f28d7b697ed7281a342b7316e4bdad0c335aa4611a3a9d2a5011267d5854533d0e6a4bb2785e993a723b12a5e9dde94cb4d4fc152ed77e3f9f166068ab8cb",
     "master": false,
     "perfil": "vendedor"
   },
   {
     "nome": "Hudson",
     "login": "hudson",
-    "senha": "123",
+    "senha": "scrypt$d569f3a7e1673644a86c97136bb5e31b$97cf0f2748ec6fae8525513613cfd1cce911f063d44ae0b9dafd22b6329f0fe072c9017fdd824c4d34670918af99ab44b7de685aa12e147d7bfacf182c91c352",
     "master": false,
     "perfil": "vendedor"
   },
   {
     "nome": "Lucas Carvalho",
     "login": "lucas",
-    "senha": "123",
+    "senha": "scrypt$77b3cfa0c9c81b8fcfcd5fe50ba41e6f$c2444190f8cd255f2a0aa7e15261391b17a1d87c2397d8061d5acff06e04ea362c5d8dcba5eba1c153634487fed2a5f2d76cd64de07cf0d15c2a370df83866c6",
     "master": false,
     "perfil": "vendedor"
   }

@@ -56,8 +56,8 @@ const ORCAMENTOS_PATH = caminhoDados('MAERA_ORCAMENTOS_JSON', 'db_orcamentos_tes
 const VENDEDORES_PATH = caminhoDados('MAERA_VENDEDORES_JSON', 'vendedores_teste.json');
 const MEM_STORE = new Map();
 const COOKIE_NAME = 'maera_auth';
-const AUTH_PASSWORD = process.env.MAERA_PASSWORD || 'maera2026';
 const MASTER_LOGIN = process.env.MAERA_MASTER_LOGIN || 'master';
+const MASTER_INITIAL_PASSWORD = process.env.MAERA_MASTER_PASSWORD || process.env.MAERA_PASSWORD || '';
 const AUTH_SECRET = process.env.MAERA_AUTH_SECRET || 'troque-este-segredo-no-render';
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 const DATABASE_URL = MODO_LOCAL ? '' : DATABASE_URL_ENV;
@@ -548,6 +548,36 @@ function gerarNumeroUnico(orcamentos, emissao) {
   return numero;
 }
 
+function senhaTemHash(valor) {
+  return typeof valor === 'string' && valor.startsWith('scrypt$');
+}
+
+function hashSenha(senha, salt = crypto.randomBytes(16).toString('hex')) {
+  const digest = crypto.scryptSync(String(senha), salt, 64).toString('hex');
+  return `scrypt$${salt}$${digest}`;
+}
+
+function normalizarSenhaPersistida(senha) {
+  const valor = String(senha || '');
+  if (!valor || senhaTemHash(valor)) return valor;
+  return hashSenha(valor);
+}
+
+function verificarSenha(senhaInformada, senhaPersistida) {
+  const armazenada = String(senhaPersistida || '');
+  if (!armazenada) return false;
+
+  if (!senhaTemHash(armazenada)) {
+    return String(senhaInformada) === armazenada;
+  }
+
+  const [, salt, digest] = armazenada.split('$');
+  if (!salt || !digest) return false;
+  const calculado = crypto.scryptSync(String(senhaInformada), salt, 64);
+  const esperado = Buffer.from(digest, 'hex');
+  return esperado.length === calculado.length && crypto.timingSafeEqual(esperado, calculado);
+}
+
 function normalizarListaVendedores(lista) {
   const usuarios = [];
   const usados = new Set();
@@ -561,7 +591,7 @@ function normalizarListaVendedores(lista) {
     usuarios.unshift({
       nome: 'Administrador',
       login: MASTER_LOGIN,
-      senha: AUTH_PASSWORD,
+      senha: normalizarSenhaPersistida(MASTER_INITIAL_PASSWORD),
       master: true,
       perfil: 'admin'
     });
@@ -589,7 +619,7 @@ function normalizarUsuario(item, index = 0) {
     return {
       nome,
       login: slugLogin(nome),
-      senha: AUTH_PASSWORD,
+      senha: '',
       master: false,
       perfil: 'vendedor'
     };
@@ -601,7 +631,7 @@ function normalizarUsuario(item, index = 0) {
   return {
     nome,
     login,
-    senha: String(item?.senha || AUTH_PASSWORD),
+    senha: normalizarSenhaPersistida(item?.senha),
     master: perfil === 'admin',
     perfil
   };
@@ -754,16 +784,7 @@ app.post('/api/login', async (req, res) => {
   const senha = String(req.body?.senha || '');
   try {
     const usuarios = normalizarListaVendedores(await listarVendedores());
-    const usuario = usuarios.find(item => item.login === login && item.senha === senha) ||
-      (login === MASTER_LOGIN && senha === AUTH_PASSWORD
-        ? {
-            nome: 'Administrador',
-            login: MASTER_LOGIN,
-            senha: AUTH_PASSWORD,
-            master: true,
-            perfil: 'admin'
-          }
-        : null);
+    const usuario = usuarios.find(item => item.login === login && verificarSenha(senha, item.senha));
     if (!usuario) {
       return res.status(401).json({ erro: 'Senha invalida.' });
     }
@@ -804,13 +825,13 @@ app.post('/api/minha-senha', async (req, res) => {
     const vendedores = normalizarListaVendedores(await listarVendedores());
     const indice = vendedores.findIndex(item => item.login === req.usuario.login);
     if (indice < 0) return res.status(404).json({ erro: 'Usuario nao encontrado.' });
-    if (vendedores[indice].senha !== senhaAtual) {
+    if (!verificarSenha(senhaAtual, vendedores[indice].senha)) {
       return res.status(401).json({ erro: 'Senha atual incorreta.' });
     }
 
     vendedores[indice] = {
       ...vendedores[indice],
-      senha: novaSenha
+      senha: hashSenha(novaSenha)
     };
     await salvarListaVendedores(vendedores);
 
