@@ -754,7 +754,16 @@ app.post('/api/login', async (req, res) => {
   const senha = String(req.body?.senha || '');
   try {
     const usuarios = normalizarListaVendedores(await listarVendedores());
-    const usuario = usuarios.find(item => item.login === login && item.senha === senha);
+    const usuario = usuarios.find(item => item.login === login && item.senha === senha) ||
+      (login === MASTER_LOGIN && senha === AUTH_PASSWORD
+        ? {
+            nome: 'Administrador',
+            login: MASTER_LOGIN,
+            senha: AUTH_PASSWORD,
+            master: true,
+            perfil: 'admin'
+          }
+        : null);
     if (!usuario) {
       return res.status(401).json({ erro: 'Senha invalida.' });
     }
