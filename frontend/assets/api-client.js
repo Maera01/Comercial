@@ -25,7 +25,7 @@
         <img src="assets/logo.png" alt="MAERA" class="api-loading-logo"/>
         <div class="api-loading-spinner"></div>
         <h2>Preparando o sistema</h2>
-        <p>Estamos acordando o servidor. Isso pode levar alguns segundos no primeiro acesso.</p>
+        <p>Isso pode levar algum tempo por favor aguarde.</p>
       </div>`;
     document.body.appendChild(overlay);
     return overlay;
