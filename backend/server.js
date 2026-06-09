@@ -587,7 +587,29 @@ function normalizarListaVendedores(lista) {
     usados.add(usuario.login);
     usuarios.push(usuario);
   });
-  if (!usuarios.some(item => item.master)) {
+
+  if (MASTER_INITIAL_PASSWORD) {
+    const indiceMaster = usuarios.findIndex(item => item.login === MASTER_LOGIN);
+    const senhaMaster = normalizarSenhaPersistida(MASTER_INITIAL_PASSWORD);
+    if (indiceMaster >= 0) {
+      usuarios[indiceMaster] = {
+        ...usuarios[indiceMaster],
+        senha: verificarSenha(MASTER_INITIAL_PASSWORD, usuarios[indiceMaster].senha)
+          ? usuarios[indiceMaster].senha
+          : senhaMaster,
+        master: true,
+        perfil: 'admin'
+      };
+    } else {
+      usuarios.unshift({
+        nome: 'Administrador',
+        login: MASTER_LOGIN,
+        senha: senhaMaster,
+        master: true,
+        perfil: 'admin'
+      });
+    }
+  } else if (!usuarios.some(item => item.master)) {
     usuarios.unshift({
       nome: 'Administrador',
       login: MASTER_LOGIN,
