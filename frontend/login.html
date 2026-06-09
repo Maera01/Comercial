@@ -95,9 +95,10 @@
     </form>
   </main>
 
+  <script src="assets/api-client.js"></script>
   <script>
     function getApiRoot() {
-      return `${window.location.origin}/api`;
+      return window.MaeraApi ? window.MaeraApi.getApiRoot() : `${window.location.origin}/api`;
     }
 
     async function checarSessao() {
@@ -105,14 +106,14 @@
         localStorage.removeItem('maera_token');
         localStorage.removeItem('maera_usuario');
         try {
-          await fetch(`${getApiRoot()}/logout`, { method: 'POST', credentials: 'include' });
+          await window.MaeraApi.fetch(`${getApiRoot()}/logout`, { method: 'POST', credentials: 'include' });
         } catch {}
         return;
       }
       try {
         const token = localStorage.getItem('maera_token');
         const headers = token ? { Authorization: `Bearer ${token}` } : {};
-        const resp = await fetch(`${getApiRoot()}/session`, {
+        const resp = await window.MaeraApi.fetch(`${getApiRoot()}/session`, {
           credentials: 'include',
           headers
         });
@@ -128,7 +129,7 @@
       erro.style.display = 'none';
 
       try {
-        const resp = await fetch(`${getApiRoot()}/login`, {
+        const resp = await window.MaeraApi.fetch(`${getApiRoot()}/login`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',

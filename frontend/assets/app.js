@@ -4,7 +4,7 @@
    ============================================ */
 
 function getApiRoot() {
-  return `${window.location.origin}/api`;
+  return window.MaeraApi ? window.MaeraApi.getApiRoot() : `${window.location.origin}/api`;
 }
 
 const API_ROOT       = getApiRoot();
@@ -18,7 +18,8 @@ async function apiFetch(url, options = {}) {
   const token = localStorage.getItem('maera_token');
   if (token) headers.Authorization = `Bearer ${token}`;
 
-  const resp = await fetch(url, {
+  const fetchApi = window.MaeraApi?.fetch || fetch;
+  const resp = await fetchApi(url, {
     ...options,
     headers,
     credentials: 'include'
@@ -72,7 +73,8 @@ async function aplicarPermissoesUsuario() {
 
 async function sairDoSistema() {
   try {
-    await fetch(`${API_ROOT}/logout`, {
+    const fetchApi = window.MaeraApi?.fetch || fetch;
+    await fetchApi(`${API_ROOT}/logout`, {
       method: 'POST',
       credentials: 'include'
     });

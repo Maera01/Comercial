@@ -146,9 +146,10 @@
   </main>
 </div>
 
+<script src="assets/api-client.js"></script>
 <script>
 function getApiRoot() {
-  return `${window.location.origin}/api`;
+  return window.MaeraApi ? window.MaeraApi.getApiRoot() : `${window.location.origin}/api`;
 }
 
 const API_VEND = `${getApiRoot()}/vendedores`;
@@ -156,7 +157,7 @@ let editandoLogin = null;
 
 async function sairDoSistema() {
   try {
-    await fetch(`${getApiRoot()}/logout`, { method: 'POST', credentials: 'include' });
+    await window.MaeraApi.fetch(`${getApiRoot()}/logout`, { method: 'POST', credentials: 'include' });
   } catch {}
   localStorage.removeItem('maera_token');
   localStorage.removeItem('maera_usuario');
@@ -174,7 +175,7 @@ function usuarioEhAdmin(usuario) {
 
 async function exigirAdminTela() {
   try {
-    const resp = await fetch(`${getApiRoot()}/session`, {
+    const resp = await window.MaeraApi.fetch(`${getApiRoot()}/session`, {
       credentials: 'include',
       headers: authHeaders()
     });
@@ -203,7 +204,7 @@ async function carregar() {
   container.innerHTML = '<div class="empty-state"><i class="fa-solid fa-circle-notch fa-spin"></i><br>Carregando...</div>';
 
   try {
-    const resp = await fetch(API_VEND, { credentials: 'include', headers: authHeaders() });
+    const resp = await window.MaeraApi.fetch(API_VEND, { credentials: 'include', headers: authHeaders() });
     if (resp.status === 401) {
       localStorage.removeItem('maera_token');
       localStorage.removeItem('maera_usuario');
@@ -284,7 +285,7 @@ async function salvar() {
     const body = { nome, login, perfil, master: perfil === 'admin' };
     if (senha) body.senha = senha;
 
-    const resp = await fetch(editandoLogin ? `${API_VEND}/${encodeURIComponent(editandoLogin)}` : API_VEND, {
+    const resp = await window.MaeraApi.fetch(editandoLogin ? `${API_VEND}/${encodeURIComponent(editandoLogin)}` : API_VEND, {
       method: editandoLogin ? 'PUT' : 'POST',
       headers: authHeaders({ 'Content-Type': 'application/json' }),
       credentials: 'include',
@@ -342,7 +343,7 @@ function atualizarModoFormulario() {
 async function excluir(login) {
   if (!login || !confirm(`Excluir o login "${login}"?`)) return;
   try {
-    const resp = await fetch(`${API_VEND}/${encodeURIComponent(login)}`, {
+    const resp = await window.MaeraApi.fetch(`${API_VEND}/${encodeURIComponent(login)}`, {
       method: 'DELETE',
       credentials: 'include',
       headers: authHeaders()

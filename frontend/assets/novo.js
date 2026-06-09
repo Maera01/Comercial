@@ -357,7 +357,7 @@ document.addEventListener('DOMContentLoaded', () => {
 async function carregarVendedores() {
   const urlVendedores = typeof API_VENDEDORES !== 'undefined'
     ? API_VENDEDORES
-    : `${window.location.origin}/api/vendedores`;
+    : `${getApiRoot()}/vendedores`;
 
   const token = localStorage.getItem('maera_token');
   const headers = token ? { Authorization: `Bearer ${token}` } : {};
@@ -393,7 +393,8 @@ async function carregarVendedores() {
     return;
   }
 
-  fetch(urlVendedores, { credentials: 'include', headers })
+  const fetchApi = window.MaeraApi?.fetch || fetch;
+  fetchApi(urlVendedores, { credentials: 'include', headers })
     .then(res => {
       if (res.status === 401) {
         localStorage.removeItem('maera_token');
