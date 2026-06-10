@@ -38,7 +38,7 @@ async function apiFetch(url, options = {}) {
 async function getSessaoAtual() {
   try {
     const resp = await apiFetch(`${API_ROOT}/session`);
-    if (!resp.ok) throw new Error('Sessao indisponivel');
+    if (!resp.ok) throw new Error('Sessão indisponível');
     const data = await resp.json();
     if (data.usuario) {
       localStorage.setItem('maera_usuario', JSON.stringify(data.usuario));
@@ -568,7 +568,7 @@ async function consultarCNPJ(cnpj) {
     const data = await resp.json();
 
     if (data?.offline) {
-      showToast(data.message || 'Consulta de CNPJ indisponivel no modo local.', 'warn');
+      showToast(data.message || 'Consulta de CNPJ indisponível no modo local.', 'warn');
       window._buscandoCNPJ = false;
       return;
     }

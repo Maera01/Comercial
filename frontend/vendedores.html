@@ -87,8 +87,8 @@
       <img src="assets/logo.png" alt="MAERA" style="height:38px;width:auto;max-width:160px;object-fit:contain"/>
     </div>
     <nav class="sidebar-nav">
-      <a href="index.html" class="nav-item"><i class="fa-solid fa-house"></i> Orcamento</a>
-      <a href="novo.html" class="nav-item"><i class="fa-solid fa-plus"></i> Novo Orcamento</a>
+      <a href="index.html" class="nav-item"><i class="fa-solid fa-house"></i> Orçamento</a>
+      <a href="novo.html" class="nav-item"><i class="fa-solid fa-plus"></i> Novo Orçamento</a>
       <a href="vendedores.html" class="nav-item active"><i class="fa-solid fa-user"></i> Vendedores</a>
     </nav>
   </aside>
@@ -253,8 +253,8 @@ async function carregar() {
     setStatus('ok', `${lista.length} login(s) - servidor: ${window.location.host}`);
   } catch (err) {
     console.error('Erro ao carregar vendedores:', err);
-    container.innerHTML = '<div class="empty-state" style="color:#f24105">Nao foi possivel carregar os logins.</div>';
-    setStatus('erro', 'Sem conexao ou sem permissao.');
+    container.innerHTML = '<div class="empty-state" style="color:#f24105">Não foi possível carregar os logins.</div>';
+    setStatus('erro', 'Sem conexão ou sem permissão.');
   }
 }
 
