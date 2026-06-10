@@ -283,7 +283,22 @@ function _renderDescontoNegociacao(negociacao) {
 
 function _parseNumeroSim(valor) {
   if (typeof valor === 'number') return Number.isFinite(valor) ? valor : 0;
-  return parseFloat(String(valor || '').replace(/\./g, '').replace(',', '.')) || 0;
+  let texto = String(valor || '').trim().replace(/[^\d.,-]/g, '');
+  if (!texto) return 0;
+
+  const ultimaVirgula = texto.lastIndexOf(',');
+  const ultimoPonto = texto.lastIndexOf('.');
+  if (ultimaVirgula >= 0 && ultimoPonto >= 0) {
+    const decimal = ultimaVirgula > ultimoPonto ? ',' : '.';
+    const milhar = decimal === ',' ? '.' : ',';
+    texto = texto.replaceAll(milhar, '').replace(decimal, '.');
+  } else if (ultimaVirgula >= 0) {
+    texto = texto.replace(/\./g, '').replace(',', '.');
+  } else if (ultimoPonto >= 0 && !/\.\d{1,2}$/.test(texto)) {
+    texto = texto.replace(/\./g, '');
+  }
+
+  return parseFloat(texto) || 0;
 }
 
 function _getCampoValor(id, padrao = '') {

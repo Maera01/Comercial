@@ -981,7 +981,22 @@ function renderBoletoCompleto(totalBruto, linhaSelecionada, fiscal) {
 
 function parseNumeroCondicao(valor) {
   if (typeof valor === 'number') return Number.isFinite(valor) ? valor : 0;
-  return parseFloat(String(valor || '').replace(/\./g, '').replace(',', '.')) || 0;
+  let texto = String(valor || '').trim().replace(/[^\d.,-]/g, '');
+  if (!texto) return 0;
+
+  const ultimaVirgula = texto.lastIndexOf(',');
+  const ultimoPonto = texto.lastIndexOf('.');
+  if (ultimaVirgula >= 0 && ultimoPonto >= 0) {
+    const decimal = ultimaVirgula > ultimoPonto ? ',' : '.';
+    const milhar = decimal === ',' ? '.' : ',';
+    texto = texto.replaceAll(milhar, '').replace(decimal, '.');
+  } else if (ultimaVirgula >= 0) {
+    texto = texto.replace(/\./g, '').replace(',', '.');
+  } else if (ultimoPonto >= 0 && !/\.\d{1,2}$/.test(texto)) {
+    texto = texto.replace(/\./g, '');
+  }
+
+  return parseFloat(texto) || 0;
 }
 
 function formatarAjusteCondicaoDoc(tipo, valor) {
@@ -1302,11 +1317,11 @@ async function gerarPDF() {
   /* ✅ CORREÇÃO: id correto é dRazaoSocial (conforme setEl no carregarOrcamento) */
   const razaoSocial = (document.getElementById('dRazaoSocial')?.textContent || '')
     .trim()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')   // remove acentos
-    .replace(/[^a-zA-Z0-9\s_-]/g, '') // remove caracteres especiais
+    .replace(/[\\/:*?"<>|]/g, '')
+    .replace(/[^\p{L}\p{N}\s._-]/gu, '')
+    .replace(/_/g, ' ')
     .trim()
-    .replace(/\s+/g, '_');             // espaços viram _
+    .replace(/\s+/g, ' ');
 
   if (!elOriginal) {
     showToast('Documento não encontrado!', 'error');
@@ -1642,8 +1657,7 @@ async function gerarPDF() {
     }
 
     /* ══════════ Salva o arquivo ══════════ */
-    // ✅ Nome: Orcamento_<numero>_<RazaoSocial>.pdf
-    pdf.save(`Orcamento_${numero}_${razaoSocial}.pdf`);
+    pdf.save(`Orçamento ${numero} - ${razaoSocial}.pdf`);
     showToast('PDF gerado com sucesso!', 'success');
 
   } catch (err) {
