@@ -367,7 +367,7 @@ function adicionarCondicaoPersonalizada() {
   const parcelas = Math.max(1, parseInt(_getCampoValor('sim_custom_parcelas', '1'), 10) || 1);
   const Condição = {
     id: `custom_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-    forma: _getCampoValor('sim_custom_forma', 'Cartao de credito'),
+    forma: _getCampoValor('sim_custom_forma', 'Cartão de crédito'),
     parcelas,
     entrada: _parseNumeroSim(_getCampoValor('sim_custom_entrada', '0')),
     intervalo: Math.max(1, parseInt(_getCampoValor('sim_custom_intervalo', '30'), 10) || 30),
