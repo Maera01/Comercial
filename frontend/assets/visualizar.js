@@ -984,17 +984,28 @@ function parseNumeroCondicao(valor) {
   return parseFloat(String(valor || '').replace(/\./g, '').replace(',', '.')) || 0;
 }
 
+function formatarAjusteCondicaoDoc(tipo, valor) {
+  if (tipo === 'desconto' && valor > 0) return `Desconto ${valor}%`;
+  if (tipo === 'desconto_fixo' && valor > 0) return `Desconto ${formatMoeda(valor)}`;
+  if (tipo === 'juros' && valor > 0) return `Juros ${valor}%`;
+  return '-';
+}
+
 function calcularCondicaoPersonalizadaDoc(Condição, totalBase) {
   const parcelas = Math.max(1, parseInt(Condição.parcelas, 10) || 1);
   const entrada = Math.max(0, Math.min(parseNumeroCondicao(Condição.entrada), totalBase || 0));
   const ajusteTipo = Condição.ajusteTipo || 'nenhum';
   const ajusteValor = Math.max(0, parseNumeroCondicao(Condição.ajusteValor));
-  const fator = ajusteTipo === 'desconto'
-    ? 1 - Math.min(ajusteValor, 100) / 100
-    : ajusteTipo === 'juros'
-      ? 1 + ajusteValor / 100
-      : 1;
-  const totalFinal = Math.max(0, (totalBase || 0) * fator);
+  const base = Math.max(0, totalBase || 0);
+  let totalFinal = base;
+  if (ajusteTipo === 'desconto') {
+    totalFinal = base * (1 - Math.min(ajusteValor, 100) / 100);
+  } else if (ajusteTipo === 'desconto_fixo') {
+    totalFinal = base - Math.min(ajusteValor, base);
+  } else if (ajusteTipo === 'juros') {
+    totalFinal = base * (1 + ajusteValor / 100);
+  }
+  totalFinal = Math.max(0, totalFinal);
   const saldo = Math.max(0, totalFinal - entrada);
   return {
     parcelas,
@@ -1025,11 +1036,7 @@ function renderCondiçõesPersonalizadasDoc(totalBase, Condições) {
     const c = calcularCondicaoPersonalizadaDoc(Condição, totalBase);
     const forma = Condição.forma || 'Condição personalizada';
     const entradaTxt = c.entrada > 0 ? `Entrada ${formatMoeda(c.entrada)} + ` : '';
-    const ajusteTxt = c.ajusteTipo === 'desconto' && c.ajusteValor > 0
-      ? `Desconto ${c.ajusteValor}%`
-      : c.ajusteTipo === 'juros' && c.ajusteValor > 0
-        ? `Juros ${c.ajusteValor}%`
-        : '-';
+    const ajusteTxt = formatarAjusteCondicaoDoc(c.ajusteTipo, c.ajusteValor);
     return `
       <tr>
         <td style="padding:8px 10px;font-weight:800;color:#374151">${forma}</td>

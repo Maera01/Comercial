@@ -291,17 +291,28 @@ function _getCampoValor(id, padrao = '') {
   return el ? el.value : padrao;
 }
 
+function _formatarAjusteCondicao(tipo, valor) {
+  if (tipo === 'desconto' && valor > 0) return `Desconto ${formatPercentualSim(valor)}`;
+  if (tipo === 'desconto_fixo' && valor > 0) return `Desconto ${formatMoeda(valor)}`;
+  if (tipo === 'juros' && valor > 0) return `Juros ${formatPercentualSim(valor)}`;
+  return '-';
+}
+
 function _calcularCondicaoPersonalizada(Condição, totalBase) {
   const parcelas = Math.max(1, parseInt(Condição.parcelas, 10) || 1);
   const entrada = Math.max(0, Math.min(_parseNumeroSim(Condição.entrada), totalBase || 0));
   const ajusteTipo = Condição.ajusteTipo || 'nenhum';
   const ajusteValor = Math.max(0, _parseNumeroSim(Condição.ajusteValor));
-  const fator = ajusteTipo === 'desconto'
-    ? 1 - Math.min(ajusteValor, 100) / 100
-    : ajusteTipo === 'juros'
-      ? 1 + ajusteValor / 100
-      : 1;
-  const totalFinal = Math.max(0, (totalBase || 0) * fator);
+  const base = Math.max(0, totalBase || 0);
+  let totalFinal = base;
+  if (ajusteTipo === 'desconto') {
+    totalFinal = base * (1 - Math.min(ajusteValor, 100) / 100);
+  } else if (ajusteTipo === 'desconto_fixo') {
+    totalFinal = base - Math.min(ajusteValor, base);
+  } else if (ajusteTipo === 'juros') {
+    totalFinal = base * (1 + ajusteValor / 100);
+  }
+  totalFinal = Math.max(0, totalFinal);
   const saldo = Math.max(0, totalFinal - entrada);
   return {
     parcelas,
@@ -320,11 +331,7 @@ function _descricaoCondicaoPersonalizada(Condição, totalBase) {
   const forma = Condição.forma || 'Condição personalizada';
   const entradaTxt = c.entrada > 0 ? `Entrada ${formatMoeda(c.entrada)} + ` : '';
   const obsTxt = String(Condição.obs || '').trim();
-  const ajusteTxt = c.ajusteTipo === 'desconto' && c.ajusteValor > 0
-    ? `Desconto ${formatPercentualSim(c.ajusteValor)}`
-    : c.ajusteTipo === 'juros' && c.ajusteValor > 0
-      ? `Juros ${formatPercentualSim(c.ajusteValor)}`
-      : '-';
+  const ajusteTxt = _formatarAjusteCondicao(c.ajusteTipo, c.ajusteValor);
   return {
     forma,
     principal: `${forma} - ${entradaTxt}${c.parcelas}x de ${formatMoeda(c.valorParcela)}`,
@@ -863,11 +870,9 @@ function _buildResumoRows(t, totalPixSemDifal, chkPix, chkCartao, chkBoleto) {
         nome: desc.forma,
         cor: '#374151',
         bg: '#f9fafb',
-        desc: desc.calculo.ajusteTipo === 'desconto' && desc.calculo.ajusteValor > 0
-          ? `Desconto ${formatPercentualSim(desc.calculo.ajusteValor)}`
-          : desc.calculo.ajusteTipo === 'juros' && desc.calculo.ajusteValor > 0
-            ? `Juros ${formatPercentualSim(desc.calculo.ajusteValor)}`
-            : 'Personalizada',
+        desc: desc.calculo.ajusteValor > 0
+          ? _formatarAjusteCondicao(desc.calculo.ajusteTipo, desc.calculo.ajusteValor)
+          : 'Personalizada',
         valor: `${desc.calculo.parcelas}x ${formatMoeda(desc.calculo.valorParcela)}`,
         det: `${desc.calculo.entrada > 0 ? `Entrada ${formatMoeda(desc.calculo.entrada)}<br>` : ''}${desc.calculo.intervalo} dias entre parcelas`
       });
